@@ -1,78 +1,3 @@
-class StringValueOrArrayHelpers {
-    /// E.g. "abc" will become "Abc", "...xyz" will become "...Xyz"
-    static toTitleCase(valOrArr) {
-        if (valOrArr == null) {
-            return null;
-        }
-        
-        // recursive calls for each array's element:
-        if (Array.isArray(valOrArr)) {
-            const titleCasedArr = [...valOrArr];
-    
-            for (let i = 0; i < titleCasedArr.length; ++i) {
-                titleCasedArr[i] = StringValueOrArrayHelpers.toTitleCase(titleCasedArr[i]);
-            }
-    
-            return titleCasedArr;
-        }
-        
-        const isNonCased = c => c != null 
-                ? c.toLowerCase() === c.toUpperCase() 
-                : true;
-
-        // the arg is a string value:
-        for (let i = 0; i < valOrArr.length; ++i) {
-            if (isNonCased(valOrArr.charAt(i))) {
-                continue; // until first 'uppercasable' char
-            }
-    
-            return valOrArr.slice(0, i + 1).toUpperCase() + valOrArr.slice(i + 1);
-        }
-        return valOrArr;
-    }
-
-    /// E.g. "abc" will become "ABC", "...xyz" will become "...XYZ"
-    static toUpperCase(valOrArr) {
-        if (valOrArr == null) {
-            return null;
-        }
-        
-        // recursive calls for each array's element:
-        if (Array.isArray(valOrArr)) {
-            const upperCasedArr = [...valOrArr];
-    
-            for (let i = 0; i < upperCasedArr.length; ++i) {
-                upperCasedArr[i] = StringValueOrArrayHelpers.toUpperCase(upperCasedArr[i]);
-            }
-    
-            return upperCasedArr;
-        }
-    
-        // the arg is a string value:
-        return valOrArr.toUpperCase();
-    }
-
-    static toDiacriticless(valOrArr) {
-        if (valOrArr == null) {
-            return null;
-        }
-    
-        // recursive calls for each array's element:
-        if (Array.isArray(valOrArr)) {
-            const diacriticlessArr = [...valOrArr];
-    
-            for (let i=0; i<diacriticlessArr.length; ++i) {
-                diacriticlessArr[i] = StringValueOrArrayHelpers.toDiacriticless(diacriticlessArr[i]);
-            }
-    
-            return diacriticlessArr;
-        }
-    
-        // the arg is a string value:
-        return valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, ""); 
-    }
-}
-        
 class Transliterator {
     #WORD_START = "~~~start~~~";
     #WORD_END = "~~~end~~~";
@@ -496,139 +421,85 @@ class Transliterator {
     }
 }
 
-///---------- Testing: ------------
-
-class FileDataReader {
-    #LOCAL_LINK = `../../`;
-    ////#GIT_HUB_LINK = `https://raw.githubusercontent.com/shevchenkoartem/t-literator/master/`;
-
-    ////#shouldReadFromGitHub = false;
-    constructor() {
-        ////this.#shouldReadFromGitHub = shouldReadFromGitHub;
-    }
-
-    readFile(folderPart, fileName) {
-        let jsonData = '';
-        
-        const pathOrLink = FileDataReader.#joinPaths([
-            ////this.#shouldReadFromGitHub ? this.#GIT_HUB_LINK : 
-            this.#LOCAL_LINK, 
-            folderPart, 
-            fileName
-        ]);
-
-        ////if (this.#shouldReadFromGitHub) {} else {
-
-        const fs = require('fs');
-        jsonData = fs.readFileSync(pathOrLink);
-
-        ////}
-        return jsonData;
-    }
-
-    getConfigObject(cfgName) {
-        const jsonData = this.readFile(`/configs`, `${cfgName}.json`);
-        ////eval("var tmp = " + jsonData);
-        const config = JSON.parse(jsonData);
-        return config;
-    }
-
-    readTestCheck(chkName) {
-        return this.readFile(`/test-checks`, `${chkName}.txt`);
-    }
-
-    static #joinPaths(paths) {
-        const SLASH = `/`;
-
-        if (paths.length < 2) {
-            return paths.length ? paths[0] : '';
+class StringValueOrArrayHelpers {
+    /// E.g. "abc" will become "Abc", "...xyz" will become "...Xyz"
+    static toTitleCase(valOrArr) {
+        if (valOrArr == null) {
+            return null;
         }
         
-        let pre = paths[0];
-        const rests = paths.slice(1);
-
-        const preHasSl = pre.endsWith(SLASH);
-        const postHasSl = rests[0].startsWith(SLASH);
-
-        if (preHasSl && postHasSl) {
-            pre = pre.slice(0, -1);
+        // recursive calls for each array's element:
+        if (Array.isArray(valOrArr)) {
+            const titleCasedArr = [...valOrArr];
+    
+            for (let i = 0; i < titleCasedArr.length; ++i) {
+                titleCasedArr[i] = StringValueOrArrayHelpers.toTitleCase(titleCasedArr[i]);
+            }
+    
+            return titleCasedArr;
         }
+        
+        const isNonCased = c => c != null 
+                ? c.toLowerCase() === c.toUpperCase() 
+                : true;
 
-        if (!preHasSl && !postHasSl) {
-            pre = pre + SLASH;
+        // the arg is a string value:
+        for (let i = 0; i < valOrArr.length; ++i) {
+            if (isNonCased(valOrArr.charAt(i))) {
+                continue; // until first 'uppercasable' char
+            }
+    
+            return valOrArr.slice(0, i + 1).toUpperCase() + valOrArr.slice(i + 1);
         }
+        return valOrArr;
+    }
 
-        rests[0] = pre + rests[0];
-        return FileDataReader.#joinPaths(rests);
+    /// E.g. "abc" will become "ABC", "...xyz" will become "...XYZ"
+    static toUpperCase(valOrArr) {
+        if (valOrArr == null) {
+            return null;
+        }
+        
+        // recursive calls for each array's element:
+        if (Array.isArray(valOrArr)) {
+            const upperCasedArr = [...valOrArr];
+    
+            for (let i = 0; i < upperCasedArr.length; ++i) {
+                upperCasedArr[i] = StringValueOrArrayHelpers.toUpperCase(upperCasedArr[i]);
+            }
+    
+            return upperCasedArr;
+        }
+    
+        // the arg is a string value:
+        return valOrArr.toUpperCase();
+    }
+
+    static toDiacriticless(valOrArr) {
+        if (valOrArr == null) {
+            return null;
+        }
+    
+        // recursive calls for each array's element:
+        if (Array.isArray(valOrArr)) {
+            const diacriticlessArr = [...valOrArr];
+    
+            for (let i=0; i<diacriticlessArr.length; ++i) {
+                diacriticlessArr[i] = StringValueOrArrayHelpers.toDiacriticless(diacriticlessArr[i]);
+            }
+    
+            return diacriticlessArr;
+        }
+    
+        // the arg is a string value:
+        return valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, ""); 
     }
 }
 
-const testConfig = function(trans, cfgName, doNotUseDiacritic) {
-    const fdr = new FileDataReader();
+// If it's Node.js:
+if (typeof window === 'undefined') { module.exports = Transliterator; }
 
-    const inputRawData = fdr.readTestCheck('input_ukr-lat');
-    eval("var input = `" + inputRawData + "`"); // TODO: get rid of var
-
-    const suffix = doNotUseDiacritic ? '_nd' : '';
-    const expectedRawData = fdr.readTestCheck(`expected_${cfgName}${suffix}`);
-    eval("var expected = `" + expectedRawData + "`"); // TODO: get rid of var
-
-    trans.useConfig(cfgName);
-    const actual = trans.transliterate(input, doNotUseDiacritic);
-
-    if (expected.trim() === actual.trim()) {
-        //console.log(actual);
-        console.log('OK :)');
-    } else {    
-        const expSpl = expected.split(/\s+/);
-        const actSpl = actual.split(/\s+/);
-
-        const l = Math.min(expSpl.length, actSpl.length);
-
-        for (let i = 0; i<l; ++i) {
-            if (expSpl[i] === actSpl[i]) {
-                continue;
-            }
-            console.log('[actual] ' + actSpl[i] + ' ≠ ' + expSpl[i]);
-        }
-        //console.log(actual);
-        console.log('NOK :(');
-    }   
-};
-
-///---------- Script logic: ------------
-
-(function() {
-
-    const configs = [
-        'ukr-lat-jireckivka-1859',
-        //'ukr-lat-heohraf-1996',
-        'ukr-lat-kabmin-2010',
-        //'ukr-lat-uatem'
-    ];
-
-    const trans = new Transliterator(new FileDataReader()); // TODO: try pass just a func instead of a whole object
-
-    for (const conf of configs) {
-        console.log(`\n${conf}:`);
-        testConfig(trans, conf);
-    }
-
-    // console.log(getTransliteration(
-    // ``
-    // ,'ukr-lat-jireckivka-1859'));
-
-    //const theConfig = getConfig('ukr-lat-kabmin-2010');
-    //const abet_res = getAllUniqueResLetters(theConfig, false, true, true);
-    //const abet_src = getAllUniqueSrcLetters(theConfig, 1);
-    //console.log(src.join("', '"));
-
-    //---------------------
-
-    //document.body.innerHTML = getTransliteration(document.body.innerHTML);
-
-})();
-
+//document.body.innerHTML = getTransliteration(document.body.innerHTML);
 
 // // USAGE
 // // FileDataReader - some class which has method getConfigObject(cfgName) 
