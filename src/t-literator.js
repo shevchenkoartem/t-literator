@@ -137,8 +137,8 @@ class Transliterator {
         }
     
         return letters
-            .filter((v, i, s) => s.indexOf(v) === i)
-            .sort();
+            .filter((v, i, s) => s.indexOf(v) === i) // get unique
+            .sort(Transliterator.#alphabetOrderComparator);
     }
 
     getTransliteratedAlphabet(getOnlyLower, doNotSeparateDigraphs) {
@@ -179,22 +179,8 @@ class Transliterator {
         }
     
         return letters
-            .filter((v, i, s) => s.indexOf(v) === i)
-            .sort(function(a, b) {
-                const f = StringValueOrArrayHelpers.toDiacriticless;
-                if (f(a) < f(b)) {
-                    return -1;
-                }
-                if (f(a) > f(b)) {
-                    return 1;
-                }
-                if (f(a) === f(b)) {
-                    if (a < b) { return -1; }
-                    if (a > b) { return 1; }
-                }
-                // a===b
-                return 0;
-            });
+            .filter((v, i, s) => s.indexOf(v) === i)  // get unique
+            .sort(Transliterator.#alphabetOrderComparator);
     }
 
     #ensureConfigCompleted() {
@@ -418,6 +404,20 @@ class Transliterator {
                 }
             }
         }
+    }
+
+    static #alphabetOrderComparator(a, b) {
+        let cyrAlphabet = 'АБВГҐДЃЂЕЀЄЁЖЗЗ́ЅИЍІЇЙЈКЛЉМНЊОПРСС́ТЋЌУЎФХЦЧЏШЩЪЫЬЭЮЯ';
+        cyrAlphabet += cyrAlphabet.toLowerCase();
+
+        const getLetterWeight = function(l) {
+            return cyrAlphabet.includes(l) 
+                ? cyrAlphabet.indexOf(l) + 1000000 // to make cyr symbols after lat
+                : StringValueOrArrayHelpers.toDiacriticless(l).charCodeAt() 
+                    + l.charCodeAt()/1000000; // when comparing, diacriticless value is 1st priority, real value - 2nd
+        };
+
+        return getLetterWeight(a) - getLetterWeight(b);
     }
 }
 
