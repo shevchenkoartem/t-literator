@@ -23,7 +23,7 @@ class FileDataReader {
     }
     
     readTestCheck(chkName) {
-        return this.readFile(`/tst/test-checks`, `${chkName}.txt`);
+        return this.readFile(`/configs/test-checks`, `${chkName}.txt`);
     }
 
     static #joinPaths(paths) { // TODO: try to find fs method
