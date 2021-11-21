@@ -8,14 +8,20 @@ const inputRawData = fdr.readTestCheck('input_ukr-lat');
 eval("var input = `" + inputRawData + "`"); // TODO: get rid of var
 
 const testConfig = function(cfgName, doNotUseDiacritic) {
-    const suffix = doNotUseDiacritic ? '_nd' : '';
-    const expectedRawData = fdr.readTestCheck(`expected_${cfgName}${suffix}`);
-    eval("var expected = `" + expectedRawData + "`"); // TODO: get rid of var
+    var expected; // TODO: get rid of var
+
+    if (!cfgName.length) { // testing an empty config
+        expected = input; 
+    } else {
+        const suffix = doNotUseDiacritic ? '_nd' : '';
+        const expectedRawData = fdr.readTestCheck(`expected_${cfgName}${suffix}`);
+        eval("expected = `" + expectedRawData + "`"); 
+    }
 
     trans.useConfig(cfgName);
     const actual = trans.transliterate(input, doNotUseDiacritic);
 
-    test(`test using ${cfgName}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
+    test(`test using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
         expect(actual).toBe(expected);
     });
 };
@@ -24,12 +30,18 @@ const configs = [
     'ukr-lat-jireckivka-1859',
     //'ukr-lat-heohraf-1996',
     'ukr-lat-kabmin-2010',
+    ''
     //'ukr-lat-uatem'
 ];
 
 for (const conf of configs) {
     testConfig(conf);
 }
+
+
+trans.useConfig(configs[0]);
+console.log(trans.getSourceAlphabet());
+console.log(trans.getTransliteratedAlphabet());
 
 //---------------------
 

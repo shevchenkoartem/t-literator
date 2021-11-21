@@ -17,6 +17,10 @@ class FileDataReader {
     }
 
     getConfigObject(cfgName) {
+        if (cfgName == null || !cfgName.length) {
+            return {};
+        }
+
         const jsonData = this.readFile(`/configs`, `${cfgName}.json`);
         const config = JSON.parse(jsonData);
         return config;
