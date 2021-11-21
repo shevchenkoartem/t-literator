@@ -7,28 +7,44 @@ const trans = new Transliterator(fdr); // TODO: try pass just a func instead of 
 const inputRawData = fdr.readTestCheck('input_ukr-lat');
 eval("var input = `" + inputRawData + "`"); // TODO: get rid of var
 
-const testConfig = function(cfgName, doNotUseDiacritic) {
-    var expected; // TODO: get rid of var
+const expectedUkrLetters = [
+    'А', 'Б', 'В', 'Г', 'Ґ', 'Д', 'Е', 'Є', 'Ж',
+    'З', 'И', 'І', 'Ї', 'Й', 'К', 'Л', 'М', 'Н',
+    'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц',
+    'Ч', 'Ш', 'Щ', 'Ь', 'Ю', 'Я', 'а', 'б', 'в',
+    'г', 'ґ', 'д', 'е', 'є', 'ж', 'з', 'и', 'і',
+    'ї', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р',
+    'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ',
+    'ь', 'ю', 'я'
+];
 
+const testConfig = function(cfgName, doNotUseDiacritic) {
     if (!cfgName.length) { // testing an empty config
-        expected = input; 
+        eval("var expectedTransliteration = input"); // TODO: get rid of var
     } else {
         const suffix = doNotUseDiacritic ? '_nd' : '';
         const expectedRawData = fdr.readTestCheck(`expected_${cfgName}${suffix}`);
-        eval("expected = `" + expectedRawData + "`"); 
+        eval("var expectedTransliteration = `" + expectedRawData + "`"); 
     }
 
     trans.useConfig(cfgName);
-    const actual = trans.transliterate(input, doNotUseDiacritic);
 
-    test(`test using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
-        expect(actual).toBe(expected);
+    const actualTransliteration = trans.transliterate(input, doNotUseDiacritic);
+    test(`test transliterating using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
+        expect(actualTransliteration) // always calculate actual and expected in new vars above to avoid caching!!!
+            .toBe(expectedTransliteration);
+    });
+
+    const actualAlphabet = trans.getSourceAlphabet();
+    const expectedAlphabet = cfgName.length ? expectedUkrLetters : [];
+    test(`test getting source alphabet using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
+        expect(actualAlphabet).toEqual(expectedAlphabet);
     });
 };
 
 const configs = [
     'ukr-lat-jireckivka-1859',
-    //'ukr-lat-heohraf-1996',
+    'ukr-lat-heohraf-1996',
     'ukr-lat-kabmin-2010',
     ''
     //'ukr-lat-uatem'
@@ -38,12 +54,11 @@ for (const conf of configs) {
     testConfig(conf);
 }
 
-
-trans.useConfig(configs[0]);
-console.log(trans.getSourceAlphabet());
-console.log(trans.getTransliteratedAlphabet());
-
 //---------------------
+
+// trans.useConfig(configs[0]);
+// console.log(trans.getSourceAlphabet());
+// console.log(trans.getTransliteratedAlphabet());
 
 // console.log(getTransliteration(
 // ``
