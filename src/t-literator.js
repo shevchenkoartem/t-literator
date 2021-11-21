@@ -24,19 +24,6 @@ class Transliterator {
 
         let lat = txt;
     
-        const apos = ["'",'`','‘','’'];
-        const apo = "'"; // TODO: розширити набір?
-        const tempApostroph = '~~~apostroph~~~';
-        const tempSoftingApo = '~~~softing_apo~~~';
-    
-        const specSymbolsDict = { // TODO: make replacing these symbs an option
-            "'" : [ '', '' ],
-            '’' : [ '', ''],
-            '«' : [ '„', '"'],
-            '»' : [ '“', '"' ],
-            '№' : [ '#', '#' ]
-        };
-    
         if (this.#config.useLocationInWordAlgo) {
             lat = this.#markStartingPositions(lat);
         }
@@ -45,8 +32,10 @@ class Transliterator {
             this.#config.beforeFixDict, 
             this.#config.useLocationInWordAlgo);    
     
-        for (const a of apos) {
-            lat = lat.replaceAll(a, tempApostroph); // To mark real apostroph sign
+        const tempApo = '~~~apostrophe~~~';
+        const apostrophesStr = Object.keys(this.#config.apostrophesSingleKeyDict)[0];
+        for (const apo of apostrophesStr.split('')) {
+            lat = lat.replaceAll(apo, tempApo); // To not mix real apostophes with softing ones which possibly will be added on the next step
         }
     
         for (const [softingKey, softingVals] of Object.entries(this.#config.softingDict)) {
@@ -82,15 +71,13 @@ class Transliterator {
                 lat = lat.replaceAll(softedKey + softingKey, softed + Transliterator.#getPositionalValue(softingVals[indexToGet]));
             }
         }
-    
-        lat = lat.replaceAll(apo, tempSoftingApo); // To prevent killing softing <'> on the next step
-        lat = lat.replaceAll(tempApostroph, apo); // Now real apostroph comes back
-    
-        lat = this.#replaceAllByDict(lat, this.#config.dict, this.#config.useLocationInWordAlgo); 
-        lat = this.#replaceAllByDict(lat, specSymbolsDict, this.#config.useLocationInWordAlgo); 
-    
-        lat = lat.replaceAll(tempSoftingApo, apo); // Now softing <'> comes back
-    
+
+        lat = lat.replaceAll(tempApo, this.#config.apostrophesSingleKeyDict[apostrophesStr]); // Replace apostrophes
+        
+        lat = this.#replaceAllByDict(lat, this.#config.dict, this.#config.useLocationInWordAlgo); // todo check last params inside the method instead passing
+        lat = this.#replaceAllByDict(lat, this.#config.otherLanguagesLettersDict, this.#config.useLocationInWordAlgo);
+        lat = this.#replaceAllByDict(lat, this.#config.specSymbolsDict, this.#config.useLocationInWordAlgo); 
+
         if (this.#config.useLocationInWordAlgo) {
             lat = lat.replaceAll(this.#WORD_START, '');
             lat = lat.replaceAll(this.#WORD_END, '');
@@ -188,6 +175,8 @@ class Transliterator {
         this.#config.name = this.#config.name ?? 'Unnamed';
         this.#config.desc = this.#config.desc ?? '';
         this.#config.link = this.#config.link ?? '';
+        this.#config.link = this.#config.from ?? '';
+        this.#config.link = this.#config.to ?? '';
     
         this.#config.hasVowelBeModifiedInsteadOfConsonantWhenSofting =
             this.#config.hasVowelBeModifiedInsteadOfConsonantWhenSofting ?? false;
@@ -199,11 +188,16 @@ class Transliterator {
         // dicts:
         this.#config.softedDict = Transliterator.#getNormalizedDictStructure(this.#config.softedDict);
         this.#config.dict = Transliterator.#getNormalizedDictStructure(this.#config.dict);
+        this.#config.otherLanguagesLettersDict = Transliterator.#getNormalizedDictStructure(this.#config.otherLanguagesLettersDict);
+        this.#config.specSymbolsDict = Transliterator.#getNormalizedDictStructure(this.#config.specSymbolsDict);
         this.#config.softingDict = Transliterator.#getNormalizedDictStructure(this.#config.softingDict);
         this.#config.softingForcedDict = Transliterator.#getNormalizedDictStructure(this.#config.softingForcedDict);
         this.#config.beforeFixDict = Transliterator.#getNormalizedDictStructure(this.#config.beforeFixDict);
         this.#config.finalFixDict = Transliterator.#getNormalizedDictStructure(this.#config.finalFixDict);
     
+        // apostrophesSingleKeyDict uses it's own rules:
+        this.#normalizeApostrophesSingleKeyDict();
+
         // beforeFixDict uses it's own rules:
         Transliterator.#completeByUpperAndTitleCased(this.#config.beforeFixDict);
         if (!this.#useDiacritics) {
@@ -218,9 +212,11 @@ class Transliterator {
             // dicts:
             this.#config.softedDict,
             this.#config.dict,
+            this.#config.otherLanguagesLettersDict,
             this.#config.softingDict,
             this.#config.softingForcedDict,
-            ////this.#config.beforeFixDict
+            ////this.#config.specSymbolsDict,
+            ////this.#config.beforeFixDict,
             this.#config.finalFixDict
         ];
     
@@ -242,7 +238,7 @@ class Transliterator {
         pattern = new RegExp(`(?<b>[${letters}])(?<c>$|[^${letters}]+)`, 'gu');
         res = res.replaceAll(pattern, `$<b>${this.#WORD_END}$<c>`);
     
-        // Words with apostroph is a single word:
+        // Words with apostrophe is a single word:
         pattern = new RegExp(`(?<a>${this.#WORD_END})(?<b>['\`‘’])(?<c>${this.#WORD_START})`, 'gu');
         res = res.replaceAll(pattern, `$<b>`);
     
@@ -343,6 +339,22 @@ class Transliterator {
                 ? from[preIs0_midIs1_postIs2] 
                 : from[from.length - 1])
             : from;
+    }
+
+    #normalizeApostrophesSingleKeyDict() {
+        let keys;
+        if (this.#config.apostrophesSingleKeyDict != null) {
+            keys = Object.keys(this.#config.apostrophesSingleKeyDict);
+        }
+
+        if (keys == null || !keys.length) {
+            this.#config.apostrophesSingleKeyDict = { "": ""};
+        } else {
+            let i = 0;
+            // ensure dict has a single key:
+            keys.forEach((key) => 
+                i++ === 0 || delete this.#config.apostrophesSingleKeyDict[key]);
+        }
     }
 
     /// If the second (non-diacritics) value/array in the dictOfArrs
