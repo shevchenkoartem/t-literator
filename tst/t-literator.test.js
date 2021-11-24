@@ -46,6 +46,7 @@ const configs = [
     'ukr-lat-jireckivka-1859',
     'ukr-lat-heohraf-1996',
     'ukr-lat-kabmin-2010',
+    'ukr-lat-abecadlo-1835',
     ''
     //'ukr-lat-uatem'
 ];
@@ -56,8 +57,9 @@ for (const conf of configs) {
 
 //---------------------
 
-// trans.useConfig(configs[0]);
-// console.log(trans.getSourceAlphabet());
+//trans.useConfig(configs[3]);
+//console.log(trans.transliterate(""));
+//сonsole.log(trans.getSourceAlphabet());
 // console.log(trans.getTransliteratedAlphabet());
 
 // console.log(getTransliteration(
