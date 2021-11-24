@@ -1,6 +1,26 @@
+// todo прибрати ь з основного дишнинері і softingDict
+// todo додати ьо в softingDict
+
+// todo softingSigns [] => softingSignsDict {} => softingSignsMultiDict {{}}
+
+// todo hasVowelBeModifiedInsteadOfConsonantWhenSofting => softenVowelRatherThanConsonant => affectVowelNotConsonantWhenSofting
+// todo beforeFixDict => beforeStartDict
+// todo finalFixDict => afterFinishDict
+
+// todo softingDict => softingVowelsDict => softingVowelsMultiDict {{}}
+// todo softingForcedDict => softingVowelsForceSoftedDict => softingVowelsMultiDict {{}}
+
+// todo softedDict => softedConsonantsDict => softableConsonantsDict
+// todo unsoftables => unsoftableConsonants
+
+// todo стушовати поруч "useLocationInWordAlgo": true,"affectVowelNotConsonantWhenSofting": true,
+
 class Transliterator {
-    #WORD_START = "~~~start~~~";
-    #WORD_END = "~~~end~~~";
+    #WORD_START = '【⟨';
+    #WORD_END = '⟩】';
+    static #AFFECTING = 'affecting';
+    static #AFFECTED = 'affected';
+    
     
     #config = {}; // TODO: probably, would be better to cache prev. used configs and use array here + currConfigIndex
     #implementingGetConfigObject;
@@ -19,6 +39,8 @@ class Transliterator {
     }
 
     transliterate(txt, doNotUseDiacritic) {
+        // todo: const conf = this.#config
+
         this.#useDiacritics = !doNotUseDiacritic; // TODO: get rid of this field
         const indexToGet = !this.#useDiacritics ? 1 : 0;
 
@@ -29,46 +51,92 @@ class Transliterator {
         }
     
         lat = this.#replaceAllByDict(lat, 
-            this.#config.beforeFixDict, 
+            this.#config.beforeStartDict, 
             this.#config.useLocationInWordAlgo);    
     
-        const tempApo = '~~~apostrophe~~~';
+        const tempApo = '⟨≀⟩';
         const apostrophesStr = Object.keys(this.#config.apostrophesSingleKeyDict)[0];
         for (const apo of apostrophesStr.split('')) {
             lat = lat.replaceAll(apo, tempApo); // To not mix real apostophes with softing ones which possibly will be added on the next step
         }
     
-        for (const [softingKey, softingVals] of Object.entries(this.#config.softingDict)) {
-            for (const unsoftable of this.#config.unsoftables) {
-                
-                const softingArr = this.#config.hasVowelBeModifiedInsteadOfConsonantWhenSofting
-                    ? softingVals
-                    : this.#config.softingForcedDict[softingKey];
+        for (const [softingVow, softingVowVals] of Object.entries(this.#config.softingVowelsMultiDict)) {
+            for (const unsoftableCon of this.#config.unsoftableConsonants) { 
+                const softedVowVals = /*this.#config.affectVowelNotConsonantWhenSofting
+                    ? softingVowVals[Transliterator.#AFFECTING]
+                    : */
+                    softingVowVals[Transliterator.#AFFECTED]; // when con is unsoftable, vow is forcibly soften
     
-                if (this.#config.useLocationInWordAlgo && Array.isArray(softingArr[indexToGet])) {
-                    const replSoftingKeyLocated = Transliterator.#getPositionalValue(softingArr[indexToGet], 2);
-                    lat = lat.replaceAll(unsoftable + softingKey + this.#WORD_END, unsoftable + replSoftingKeyLocated + this.#WORD_END);
+                if (this.#config.useLocationInWordAlgo && Array.isArray(softedVowVals[indexToGet])) {
+                    const softedVowValLocated = Transliterator.#getPositionalValue(softedVowVals[indexToGet], 2);
+                    lat = lat.replaceAll(
+                        unsoftableCon + softingVow + this.#WORD_END, 
+                        unsoftableCon + softedVowValLocated + this.#WORD_END
+                    );
                     // TODO: + beginning with unsoftable
                 }
     
                 // replace either value (common case) or middle value (if useLocationInWordAlgo):
-                const replSoftingKey = Transliterator.#getPositionalValue(softingArr[indexToGet]);
-                lat = lat.replaceAll(unsoftable + softingKey, unsoftable + replSoftingKey);
+                const softedVowVal = Transliterator.#getPositionalValue(softedVowVals[indexToGet]);
+                lat = lat.replaceAll(
+                    unsoftableCon + softingVow, 
+                    unsoftableCon + softedVowVal
+                );
             }
     
-            for (const [softedKey, softedVals] of Object.entries(this.#config.softedDict)) {
+            for (const [conToSoften, softedConVals] of Object.entries(this.#config.softableConsonantsDict)) {
                 // TODO: consider useLocationInWordAlgo
                 
-                const softed = this.#config.hasVowelBeModifiedInsteadOfConsonantWhenSofting && !this.#config.softingSigns.includes(softingKey) 
-                    ? softedKey 
-                    : Transliterator.#getPositionalValue(softedVals[indexToGet]);
-                
-                if (this.#config.useLocationInWordAlgo && Array.isArray(softingVals[indexToGet])) {
-                    lat = lat.replaceAll(softedKey + softingKey + this.#WORD_END, softed + Transliterator.#getPositionalValue(softingVals[indexToGet], 2) + this.#WORD_END);
+                const conAfterSoftening = this.#config.affectVowelNotConsonantWhenSofting 
+                    ? conToSoften 
+                    : Transliterator.#getPositionalValue(softedConVals[indexToGet]);
+
+                if (this.#config.useLocationInWordAlgo && Array.isArray(softingVowVals[Transliterator.#AFFECTING][indexToGet])) {
+                    const vowAfterSofteningLocated = Transliterator.#getPositionalValue(softingVowVals[Transliterator.#AFFECTING][indexToGet], 2);
+                    lat = lat.replaceAll(
+                        conToSoften + softingVow + this.#WORD_END, 
+                        conAfterSoftening + vowAfterSofteningLocated + this.#WORD_END
+                    );
                     // TODO: + beginning with softed
                 }
     
-                lat = lat.replaceAll(softedKey + softingKey, softed + Transliterator.#getPositionalValue(softingVals[indexToGet]));
+                const vowAfterSoftening = Transliterator.#getPositionalValue(softingVowVals[Transliterator.#AFFECTING][indexToGet]);
+                lat = lat.replaceAll(
+                    conToSoften + softingVow, 
+                    conAfterSoftening + vowAfterSoftening
+                );
+            }
+        }
+
+        for (const [softingSign, softingSignSubDict] of Object.entries(this.#config.softingSignsMultiDict)) {
+            for (const unsoftableCon of this.#config.unsoftableConsonants) { 
+                // TODO: think (and see prev. sample if needed)
+                // TODO: consider useLocationInWordAlgo!!!
+                lat = lat.replaceAll(
+                    unsoftableCon + softingSign, 
+                    unsoftableCon + softingSignSubDict[Transliterator.#AFFECTED][indexToGet]
+                );
+            }
+    
+            for (const [conToSoften, softedConVals] of Object.entries(this.#config.softableConsonantsDict)) {
+                // TODO: consider useLocationInWordAlgo, recheck
+                
+                const conAfterSoftening = Transliterator.#getPositionalValue(softedConVals[indexToGet]);
+                
+                if (this.#config.useLocationInWordAlgo && Array.isArray(softingSignSubDict[Transliterator.#AFFECTING][indexToGet])) {
+                    const softingSignAfterSofteningLocated = Transliterator.#getPositionalValue(softingSignSubDict[Transliterator.#AFFECTING][indexToGet], 2);
+                    lat = lat.replaceAll(
+                        conToSoften + softingSign + this.#WORD_END, 
+                        conAfterSoftening + softingSignAfterSofteningLocated + this.#WORD_END
+                    );
+                    // TODO: + beginning with softed
+                }
+    
+                const softingSignAfterSoftening = Transliterator.#getPositionalValue(softingSignSubDict[Transliterator.#AFFECTING][indexToGet]);
+                lat = lat.replaceAll(
+                    conToSoften + softingSign, 
+                    conAfterSoftening + softingSignAfterSoftening
+                );
             }
         }
 
@@ -85,7 +153,7 @@ class Transliterator {
         
         lat = this.#detectAndFixCapsLocked(lat);
     
-        lat = this.#replaceAllByDict(lat, this.#config.finalFixDict, this.#config.useLocationInWordAlgo); 
+        lat = this.#replaceAllByDict(lat, this.#config.afterFinishDict, this.#config.useLocationInWordAlgo); 
     
         return lat;
     }
@@ -95,14 +163,26 @@ class Transliterator {
         this.#ensureConfigCompleted();
     }
 
+    // getGeneralCyrTranslationDictionary() {
+    //     const result = {};
+
+    //     const source
+
+
+    //     for (const cyrLetter of cyrLowerAlphabet.split('')) {
+
+    //     }
+        
+    // }
+
+    // TODO /* rethink collections */
     getSourceAlphabet(getOnlyLower) {
-        const letterHeap = this.#config.unsoftables
-            .concat(this.#config.softingSigns)
+        const letterHeap = this.#config.unsoftableConsonants
+            .concat(Object.keys(this.#config.softingSignsMultiDict))
             .concat(Object.keys(this.#config.dict))
-            .concat(Object.keys(this.#config.softedDict))
-            .concat(Object.keys(this.#config.softingDict))
-            .concat(Object.keys(this.#config.softingForcedDict))
-            .concat(Object.keys(this.#config.beforeFixDict));
+            .concat(Object.keys(this.#config.softableConsonantsDict))
+            .concat(Object.keys(this.#config.softingVowelsMultiDict))
+            .concat(Object.keys(this.#config.beforeStartDict));
     
         const letters = [];
         for (const el of letterHeap) {
@@ -128,19 +208,23 @@ class Transliterator {
             .sort(Transliterator.#alphabetOrderComparator);
     }
 
+    // TODO /* rethink collections */
     getTransliteratedAlphabet(getOnlyLower, doNotSeparateDigraphs) {
         const indexToGet = !this.#useDiacritics ? 1 : 0;
         
         const flatValuesAt = function(obj) {
-            return Object.values(obj).flatMap(val => val[indexToGet]);
+            return Object.values(obj).flatMap(val => 
+                val.constructor === Object 
+                ? flatValuesAt(val) 
+                : val[indexToGet]);
         };
 
-        const letterHeap = flatValuesAt(this.#config.beforeFixDict)
+        const letterHeap = flatValuesAt(this.#config.beforeStartDict)
             .concat(flatValuesAt(this.#config.dict))
-            .concat(flatValuesAt(this.#config.softedDict))
-            .concat(flatValuesAt(this.#config.softingDict))
-            .concat(flatValuesAt(this.#config.softingForcedDict))
-            .concat(flatValuesAt(this.#config.finalFixDict));
+            .concat(flatValuesAt(this.#config.softableConsonantsDict))
+            .concat(flatValuesAt(this.#config.softingVowelsMultiDict))
+            .concat(flatValuesAt(this.#config.softingSignsMultiDict))
+            .concat(flatValuesAt(this.#config.afterFinishDict));
     
         const letters = [];
         for (const el of letterHeap) {
@@ -178,46 +262,44 @@ class Transliterator {
         this.#config.link = this.#config.from ?? '';
         this.#config.link = this.#config.to ?? '';
     
-        this.#config.hasVowelBeModifiedInsteadOfConsonantWhenSofting =
-            this.#config.hasVowelBeModifiedInsteadOfConsonantWhenSofting ?? false;
+        this.#config.affectVowelNotConsonantWhenSofting =
+            this.#config.affectVowelNotConsonantWhenSofting ?? false;
         this.#config.useLocationInWordAlgo = this.#config.useLocationInWordAlgo ?? false;
     
         // arrs:
-        this.#config.unsoftables = this.#config.unsoftables ?? [];
-        this.#config.softingSigns = this.#config.softingSigns ?? [];
+        this.#config.unsoftableConsonants = this.#config.unsoftableConsonants ?? [];
         // dicts:
-        this.#config.softedDict = Transliterator.#getNormalizedDictStructure(this.#config.softedDict);
+        this.#config.softableConsonantsDict = Transliterator.#getNormalizedDictStructure(this.#config.softableConsonantsDict);
         this.#config.dict = Transliterator.#getNormalizedDictStructure(this.#config.dict);
         this.#config.otherLanguagesLettersDict = Transliterator.#getNormalizedDictStructure(this.#config.otherLanguagesLettersDict);
         this.#config.specSymbolsDict = Transliterator.#getNormalizedDictStructure(this.#config.specSymbolsDict);
-        this.#config.softingDict = Transliterator.#getNormalizedDictStructure(this.#config.softingDict);
-        this.#config.softingForcedDict = Transliterator.#getNormalizedDictStructure(this.#config.softingForcedDict);
-        this.#config.beforeFixDict = Transliterator.#getNormalizedDictStructure(this.#config.beforeFixDict);
-        this.#config.finalFixDict = Transliterator.#getNormalizedDictStructure(this.#config.finalFixDict);
-    
-        // apostrophesSingleKeyDict uses it's own rules:
+        this.#config.beforeStartDict = Transliterator.#getNormalizedDictStructure(this.#config.beforeStartDict);
+        this.#config.afterFinishDict = Transliterator.#getNormalizedDictStructure(this.#config.afterFinishDict);
+        // multidicts:
+        this.#config.softingSignsMultiDict = Transliterator.#getNormalizedMultiDictStructure(this.#config.softingSignsMultiDict);
+        this.#config.softingVowelsMultiDict = Transliterator.#getNormalizedMultiDictStructure(this.#config.softingVowelsMultiDict);
+        // single key dicts:
         this.#normalizeApostrophesSingleKeyDict();
 
-        // beforeFixDict uses it's own rules:
-        Transliterator.#completeByUpperAndTitleCased(this.#config.beforeFixDict);
+        // beforeStartDict uses it's own rules:
+        Transliterator.#completeByUpperAndTitleCased(this.#config.beforeStartDict);
         if (!this.#useDiacritics) {
-            Transliterator.#completeByNonDiacritics(this.#config.beforeFixDict, true);
+            Transliterator.#completeByNonDiacritics(this.#config.beforeStartDict, true);
         }
     
         const cols = [ 
             // arrs:
-            this.#config.unsoftables,
-            this.#config.softingSigns,
+            this.#config.unsoftableConsonants,
     
-            // dicts:
-            this.#config.softedDict,
+            // dicts/multidicts:
+            this.#config.softableConsonantsDict,
             this.#config.dict,
             this.#config.otherLanguagesLettersDict,
-            this.#config.softingDict,
-            this.#config.softingForcedDict,
+            this.#config.softingSignsMultiDict,
+            this.#config.softingVowelsMultiDict,
             ////this.#config.specSymbolsDict,
-            ////this.#config.beforeFixDict,
-            this.#config.finalFixDict
+            ////this.#config.beforeStartDict,
+            this.#config.afterFinishDict
         ];
     
         for (const col of cols) {
@@ -307,10 +389,10 @@ class Transliterator {
             return res;
         }
     
+        // TODO: refactor using const (key, value):
         for (const key of Object.keys(dict)) {
             const isValue = !Array.isArray(dict[key]);
             const isEmptyArray = Array.isArray(dict[key]) && dict[key].length === 0;
-            //const isArrayWith1or2Elems = Array.isArray(dict[key]) && (dict[key].length === 1 || dict[key].length === 2);
             const isArrayWith3Elems = Array.isArray(dict[key]) && dict[key].length === 3;
     
             if (isValue || isArrayWith3Elems) {
@@ -328,7 +410,31 @@ class Transliterator {
     
         return res;
     }
-    
+
+    static #getNormalizedMultiDictStructure(multiDict) {        
+        const res = {};
+
+        if (multiDict == null) {
+            return res;
+        }
+        
+        // TODO: use [key, value]
+        for (const key of Object.keys(multiDict)) {
+            if (multiDict[key].constructor !== Object) {
+                const valOrArr = multiDict[key];
+                const affectionDict = {};
+                affectionDict[Transliterator.#AFFECTED] = valOrArr;
+                affectionDict[Transliterator.#AFFECTING] = valOrArr;
+
+                res[key] = Transliterator.#getNormalizedDictStructure(affectionDict);
+            } else {
+                res[key] = Transliterator.#getNormalizedDictStructure(multiDict[key]);
+            }
+        }
+
+        return res;
+    }
+        
     static #getPositionalValue(from, preIs0_midIs1_postIs2) { // прототип для обробки можливості мати тріаду префікс-мід-пост
         if (preIs0_midIs1_postIs2 == null) {
             preIs0_midIs1_postIs2 = 1; // default is mid
@@ -359,60 +465,82 @@ class Transliterator {
 
     /// If the second (non-diacritics) value/array in the dictOfArrs
     /// hasn't been set – let's copy it without diacritics.
-    static #completeByNonDiacritics(/*[ref]*/dictOfArrs, doNotForce) { // TODO: use last arg level upper
-        if (dictOfArrs.constructor !== Object) {
+    static #completeByNonDiacritics(/*[ref]*/dictOfArrsOrMulti, doNotForce) { // TODO: use last arg level upper
+        if (dictOfArrsOrMulti.constructor !== Object) {
             return;
         }
-            
-        for (const arr of Object.values(dictOfArrs)) {
-            if (!arr.length) {
+
+        for (const arrOrAffectionDict of Object.values(dictOfArrsOrMulti)) {
+            if (arrOrAffectionDict.constructor === Object) {
+                // affection dict, use recursive call:
+                Transliterator.#completeByNonDiacritics(arrOrAffectionDict);
+                continue;
+            }
+
+            if (!arrOrAffectionDict.length) {
                 continue; // it shouldn't happen
             }
             
-            if (arr.length === 1) {
+            if (arrOrAffectionDict.length === 1) {
                 // Copy second one from the first one:
-                arr.push(StringValueOrArrayHelpers.toDiacriticless(arr[0]));
+                arrOrAffectionDict.push(StringValueOrArrayHelpers.toDiacriticless(arrOrAffectionDict[0]));
             } else if (!doNotForce) { // arr.length > 1 and forced mode
-                arr[1] = StringValueOrArrayHelpers.toDiacriticless(arr[1]); // forced mode: ensure given second value doesn't have diacritics
+                arrOrAffectionDict[1] = StringValueOrArrayHelpers.toDiacriticless(arrOrAffectionDict[1]); // forced mode: ensure given second value doesn't have diacritics
             } else {
                 // do nothing;
             } 
         }
     }
     
-    static #completeByUpperAndTitleCased(/*[ref]*/arrOrDict) {
+    static #completeByUpperAndTitleCased(/*[ref]*/arrOrDictOrMulti) {
         const toCaseFuncs = [ 
             StringValueOrArrayHelpers.toTitleCase, 
             StringValueOrArrayHelpers.toUpperCase 
         ];
+        // TODO: append func for 3 letters case (or probably each of possible combinations)
         
-        if (Array.isArray(arrOrDict)) {
+        if (Array.isArray(arrOrDictOrMulti)) {
             const toConcat = [];
     
-            for (const item of arrOrDict) {
+            for (const item of arrOrDictOrMulti) {
                 for (const toCaseFunc of toCaseFuncs) {
                     const toPush = toCaseFunc(item);
-                    if (!arrOrDict.includes(toPush) && !toConcat.includes(toPush)) {
+                    if (!arrOrDictOrMulti.includes(toPush) && !toConcat.includes(toPush)) {
                         toConcat.push(toPush);
                     }
                 }
             }
             
-            toConcat.forEach(val => arrOrDict.push(val)); // instead of: arrOrDict = arrOrDict.concat(toConcat);
-        } else { // dictionary:
-            for (const [lowerKey, lowerArr] of Object.entries(arrOrDict)) {
+            toConcat.forEach(val => arrOrDictOrMulti.push(val)); // instead of: arrOrDict = arrOrDict.concat(toConcat);
+        } else { // dictionary or multi-dictionary:
+            for (const [lowerKey, lowerArrOrAffectionDict] of Object.entries(arrOrDictOrMulti)) {
                 for (const toCaseFunc of toCaseFuncs) {
                     const casedKey = toCaseFunc(lowerKey); 
-                    if (arrOrDict.hasOwnProperty(casedKey)) {
+                    if (arrOrDictOrMulti.hasOwnProperty(casedKey)) {
                         continue;
                     }
-    
-                    const casedArr = [];
-                    for (const valOrArr of lowerArr) {
-                        casedArr.push(toCaseFunc(valOrArr));
+                    
+                    if (Array.isArray(lowerArrOrAffectionDict)) {
+                        const casedArr = [];
+                        for (const valOrArr of lowerArrOrAffectionDict) {
+                            casedArr.push(toCaseFunc(valOrArr));
+                        } 
+
+                        arrOrDictOrMulti[casedKey] = casedArr;
+                        continue;
                     }
-    
-                    arrOrDict[casedKey] = casedArr;
+
+                    const casedAffectionDict = {};
+                    
+                    for (const [affectionKey, affectionLowerArr] of Object.entries(lowerArrOrAffectionDict)) {
+                        const casedArr = [];
+                        for (const valOrArr of affectionLowerArr) {
+                            casedArr.push(toCaseFunc(valOrArr));
+                        }
+                        casedAffectionDict[affectionKey] = casedArr;
+                    }
+
+                    arrOrDictOrMulti[casedKey] = casedAffectionDict;
                 }
             }
         }
