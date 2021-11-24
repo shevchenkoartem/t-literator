@@ -1,20 +1,3 @@
-// todo прибрати ь з основного дишнинері і softingDict
-// todo додати ьо в softingDict
-
-// todo softingSigns [] => softingSignsDict {} => softingSignsMultiDict {{}}
-
-// todo hasVowelBeModifiedInsteadOfConsonantWhenSofting => softenVowelRatherThanConsonant => affectVowelNotConsonantWhenSofting
-// todo beforeFixDict => beforeStartDict
-// todo finalFixDict => afterFinishDict
-
-// todo softingDict => softingVowelsDict => softingVowelsMultiDict {{}}
-// todo softingForcedDict => softingVowelsForceSoftedDict => softingVowelsMultiDict {{}}
-
-// todo softedDict => softedConsonantsDict => softableConsonantsDict
-// todo unsoftables => unsoftableConsonants
-
-// todo стушовати поруч "useLocationInWordAlgo": true,"affectVowelNotConsonantWhenSofting": true,
-
 class Transliterator {
     #WORD_START = '【⟨';
     #WORD_END = '⟩】';
