@@ -4,13 +4,14 @@ class Transliterator {
     static #AFFECTING = 'affecting';
     static #AFFECTED = 'affected';
     
-    
     #config = {}; // TODO: probably, would be better to cache prev. used configs and use array here + currConfigIndex
     #implementingGetConfigObject;
     #useDiacritics = true;
 
     constructor(implementingGetConfigObject, /*[optional]*/ cfgName) {
-        this.#implementingGetConfigObject = implementingGetConfigObject;
+        this.#implementingGetConfigObject = implementingGetConfigObject != null
+            ? implementingGetConfigObject
+            : new DefaultConfigReaderFromGitHub();
         
         if (cfgName != null) {
             this.useConfig(cfgName);
@@ -616,6 +617,32 @@ class StringValueOrArrayHelpers {
     
         // the arg is a string value:
         return valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, ""); 
+    }
+}
+
+class DefaultConfigReaderFromGitHub {
+    static #PROJECT_HOME_LINK = `https://raw.githubusercontent.com/shevchenkoartem/t-literator-configs/master/`;
+
+    getConfigObject(cfgName) {
+        if (cfgName == null || !cfgName.length) {
+            return {};
+        }
+
+        const jsonData = DefaultConfigReaderFromGitHub.#httpGet(`${DefaultConfigReaderFromGitHub.#PROJECT_HOME_LINK}${cfgName}.json`);
+        const config = JSON.parse(jsonData);
+        return config;
+    }
+
+    static #httpGet(url) {
+        const Request = typeof window === 'undefined'
+            ? /* Node.js */ require("xmlhttprequest").XMLHttpRequest // prereq: npm install xmlhttprequest
+            : /* browser */ XMLHttpRequest;
+        
+        const req = new Request();
+        const isAsync = false;
+        req.open("GET", url, isAsync);
+        req.send(null);
+        return req.responseText;
     }
 }
 

@@ -4,5 +4,8 @@
   },
   "scripts": {
     "test": "jest"
+  },
+  "dependencies": {
+    "xmlhttprequest": "^1.8.0"
   }
 }
