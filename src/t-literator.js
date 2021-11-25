@@ -19,7 +19,7 @@ class Transliterator {
     }
 
     get config() {
-        return {...this.#config};
+        return { ...this.#config };
     }
 
     transliterate(txt, doNotUseDiacritic) {
@@ -143,7 +143,7 @@ class Transliterator {
     }
 
     useConfig(cfgName) {
-        this.#config = this.#implementingGetConfigObject.getConfigObject(cfgName);
+        this.#config = { ...this.#implementingGetConfigObject.getConfigObject(cfgName) };
         this.#ensureConfigCompleted();
     }
 
