@@ -4,18 +4,18 @@ const FileDataReader = require('./file-data-reader');
 const fdr = new FileDataReader();
 const trans = new Transliterator(fdr); // TODO: try pass just a func instead of a whole object
 
-const inputRawData = fdr.readTestCheck('input_ukr-lat');
+const inputRawData = fdr.readTestCheck('input_ukr-lat', 'trans');
 eval("var input = `" + inputRawData + "`"); // TODO: get rid of var
 
-const expectedUkrLetters = [
-    'А', 'Б', 'В', 'Г', 'Ґ', 'Д', 'Е', 'Є', 'Ж',
-    'З', 'И', 'І', 'Ї', 'Й', 'К', 'Л', 'М', 'Н',
-    'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф', 'Х', 'Ц',
-    'Ч', 'Ш', 'Щ', 'Ь', 'Ю', 'Я', 'а', 'б', 'в',
-    'г', 'ґ', 'д', 'е', 'є', 'ж', 'з', 'и', 'і',
-    'ї', 'й', 'к', 'л', 'м', 'н', 'о', 'п', 'р',
-    'с', 'т', 'у', 'ф', 'х', 'ц', 'ч', 'ш', 'щ',
-    'ь', 'ю', 'я'
+const expectedUkrLetters = [ // TODO: move to file
+    'А', 'а', 'Б', 'б', 'В', 'в', 'Г', 'г', 'Ґ',
+    'ґ', 'Д', 'д', 'Е', 'е', 'Є', 'є', 'Ж', 'ж',
+    'З', 'з', 'И', 'и', 'І', 'і', 'Ї', 'ї', 'Й',
+    'й', 'К', 'к', 'Л', 'л', 'М', 'м', 'Н', 'н',
+    'О', 'о', 'П', 'п', 'Р', 'р', 'С', 'с', 'Т',
+    'т', 'У', 'у', 'Ф', 'ф', 'Х', 'х', 'Ц', 'ц',
+    'Ч', 'ч', 'Ш', 'ш', 'Щ', 'щ', 'Ь', 'ь', 'Ю',
+    'ю', 'Я', 'я'
 ];
 
 const testConfig = function(cfgName, doNotUseDiacritic) {
@@ -23,7 +23,7 @@ const testConfig = function(cfgName, doNotUseDiacritic) {
         eval("var expectedTransliteration = input"); // TODO: get rid of var
     } else {
         const suffix = doNotUseDiacritic ? '_nd' : '';
-        const expectedRawData = fdr.readTestCheck(`expected_${cfgName}${suffix}`);
+        const expectedRawData = fdr.readTestCheck(`exp_output_${cfgName}${suffix}`, 'trans');
         eval("var expectedTransliteration = `" + expectedRawData + "`"); 
     }
 
@@ -40,6 +40,30 @@ const testConfig = function(cfgName, doNotUseDiacritic) {
     test(`test getting source alphabet using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
         expect(actualAlphabet).toEqual(expectedAlphabet);
     });
+
+    const actualTransAlphabet = trans.getTransliteratedAlphabet();
+    if (!cfgName.length) { // testing an empty config
+        eval("var expectedTransAlphabet = []"); // TODO: get rid of var
+    } else {
+        const suffix = doNotUseDiacritic ? '_nd' : '';
+        const expectedRawData = fdr.readTestCheck(`exp_alphab_${cfgName}${suffix}`, 'alphab');
+        eval("var expectedTransAlphabet = " + expectedRawData); 
+    }
+    test(`test getting transliterated alphabet using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
+        expect(actualTransAlphabet).toEqual(expectedTransAlphabet);
+    });
+
+    const actualTransInfo = trans.getConfigTransliterationInfo();
+    if (!cfgName.length) { // testing an empty config
+        eval("var expectedTransInfo = {}"); // TODO: get rid of var
+    } else {
+        const suffix = doNotUseDiacritic ? '_nd' : '';
+        const expectedRawData = fdr.readTestCheck(`exp_info_${cfgName}${suffix}`, 'info');
+        eval("var expectedTransInfo = " + expectedRawData); 
+    }
+    test(`test getting transliteration info using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
+        expect(actualTransInfo).toEqual(expectedTransInfo);
+    });
 };
 
 const configs = [
@@ -47,8 +71,8 @@ const configs = [
     'ukr-lat-heohraf-1996',
     'ukr-lat-kabmin-2010',
     'ukr-lat-abecadlo-1835',
+    'ukr-lat-temivka-2021',
     ''
-    //'ukr-lat-uatem'
 ];
 
 for (const conf of configs) {

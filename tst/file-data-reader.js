@@ -11,7 +11,7 @@ class FileDataReader {
         ]);
 
         const fs = require('fs');
-        jsonData = fs.readFileSync(pathOrLink);
+        jsonData = fs.readFileSync(pathOrLink, 'utf8');
 
         return jsonData;
     }
@@ -21,13 +21,20 @@ class FileDataReader {
             return {};
         }
 
-        const jsonData = this.readFile(`/configs`, `${cfgName}.json`);
-        const config = JSON.parse(jsonData);
+        let jsonText = this.readFile(`/configs`, `${cfgName}.json`);
+        jsonText = jsonText.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); // remove comments, not affecting web links
+        jsonText = jsonText.replace(/[\u202F\u00A0]/, ' '); // replace a non-breaking space to a common one
+
+        const config = JSON.parse(jsonText);
         return config;
     }
     
-    readTestCheck(chkName) {
-        return this.readFile(`/configs/test-checks`, `${chkName}.txt`);
+    readTestCheck(chkName, folder) {
+        const folderPath = FileDataReader.#joinPaths([
+            `/configs/test-checks`,
+            (folder != null) ? `/${folder}` : ''
+        ]);
+        return this.readFile(folderPath, `${chkName}.txt`);
     }
 
     static #joinPaths(paths) { // TODO: try to find fs method
