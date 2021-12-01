@@ -67,10 +67,11 @@ const testConfig = function(cfgName, doNotUseDiacritic) {
 };
 
 const configs = [
+    'ukr-lat-abecadlo-1835',
     'ukr-lat-jireckivka-1859',
     'ukr-lat-heohraf-1996',
     'ukr-lat-kabmin-2010',
-    'ukr-lat-abecadlo-1835',
+    'ukr-lat-lucukivka-2000',
     'ukr-lat-temivka-2021',
     ''
 ];
