@@ -4,7 +4,7 @@ const FileDataReader = require('./file-data-reader');
 const fdr = new FileDataReader();
 const trans = new Transliterator(fdr); // TODO: try pass just a func instead of a whole object
 
-const inputRawData = fdr.readTestCheck('input_ukr-lat', 'trans');
+const inputRawData = fdr.readTestCheck('_actual_input', 'trans');
 eval("var input = `" + inputRawData + "`"); // TODO: get rid of var
 
 const expectedUkrLetters = [ // TODO: move to file
@@ -46,7 +46,7 @@ const testConfig = function(cfgName, doNotUseDiacritic) {
         eval("var expectedTransAlphabet = []"); // TODO: get rid of var
     } else {
         const suffix = doNotUseDiacritic ? '_nd' : '';
-        const expectedRawData = fdr.readTestCheck(`exp_alphab_${cfgName}${suffix}`, 'alphab');
+        const expectedRawData = fdr.readTestCheck(`exp_alphabet_${cfgName}${suffix}`, 'alphabet');
         eval("var expectedTransAlphabet = " + expectedRawData); 
     }
     test(`test getting transliterated alphabet using ${cfgName.length ? cfgName : 'an empty config'}` + (doNotUseDiacritic ? ' (diacritiless)' : '') + ' config', () => {
@@ -67,12 +67,12 @@ const testConfig = function(cfgName, doNotUseDiacritic) {
 };
 
 const configs = [
-    'ukr-lat-abecadlo-1835',
-    'ukr-lat-jireckivka-1859',
-    'ukr-lat-heohraf-1996',
-    'ukr-lat-kabmin-2010',
-    'ukr-lat-lucukivka-2000',
-    'ukr-lat-temivka-2021',
+    'abecadlo',
+    'jireckivka',
+    'heohraf',
+    'pasport',
+    'lucukivka',
+    'tem-shevchenko',
     ''
 ];
 
@@ -89,9 +89,9 @@ for (const conf of configs) {
 
 // console.log(getTransliteration(
 // ``
-// ,'ukr-lat-jireckivka-1859'));
+// ,'jireckivka'));
 
-//const theConfig = getConfig('ukr-lat-kabmin-2010');
+//const theConfig = getConfig('pasport');
 //const abet_res = getAllUniqueResLetters(theConfig, false, true, true);
 //const abet_src = getAllUniqueSrcLetters(theConfig, 1);
 //console.log(src.join("', '"));

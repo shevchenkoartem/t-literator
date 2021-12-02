@@ -21,7 +21,7 @@ class FileDataReader {
             return {};
         }
 
-        let jsonText = this.readFile(`/configs`, `${cfgName}.json`);
+        let jsonText = this.readFile(`/configs/src`, `${cfgName}.json`);
         jsonText = jsonText.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); // remove comments, not affecting web links
         jsonText = jsonText.replace(/[\u202F\u00A0]/, ' '); // replace a non-breaking space to a common one
 
