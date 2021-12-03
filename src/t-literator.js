@@ -931,7 +931,7 @@ class DefaultConfigReaderFromGitHub {
             return {};
         }
 
-        let jsonText = DefaultConfigReaderFromGitHub.#httpGet(`${DefaultConfigReaderFromGitHub.#PROJECT_HOME_LINK}${cfgName}.json`);
+        let jsonText = DefaultConfigReaderFromGitHub.#httpGet(`${DefaultConfigReaderFromGitHub.#PROJECT_HOME_LINK}${cfgName}.config`);
         jsonText = jsonText.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); // remove comments, not affecting web links
         jsonText = jsonText.replace(/[\u202F\u00A0]/g, ' '); // replace a non-breaking space to a common one
         
