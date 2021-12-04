@@ -1,4 +1,4 @@
-const Transliterator = require('../src/t-literator');
+const Transliterator = require('../src/transliterator');
 const FileDataReader = require('./file-data-reader');
 
 const fdr = new FileDataReader();

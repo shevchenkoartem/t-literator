@@ -1,3 +1,5 @@
+const fs = require('fs');
+
 class FileDataReader {
     #PROJECT_HOME_DIR = './';
 
@@ -10,7 +12,6 @@ class FileDataReader {
             fileName
         ]);
 
-        const fs = require('fs');
         jsonData = fs.readFileSync(pathOrLink, 'utf8');
 
         return jsonData;

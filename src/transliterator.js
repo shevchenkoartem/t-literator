@@ -1,3 +1,11 @@
+const Helpers = typeof window === 'undefined'
+? /* Node.js */ require('./string-value-or-array-helpers')
+: /* browser */ StringValueOrArrayHelpers;
+
+const FromGitHubReader = typeof window === 'undefined'
+? /* Node.js */ require('./default-config-reader-from-github')
+: /* browser */ DefaultConfigReaderFromGitHub;
+
 class Transliterator {
     static #AFFECTING = 'affecting';
     static #AFFECTED = 'affected';
@@ -13,7 +21,7 @@ class Transliterator {
     constructor(implementingGetConfigObject, /*[optional]*/ cfgName) {
         this.#implementingGetConfigObject = implementingGetConfigObject != null
             ? implementingGetConfigObject
-            : new DefaultConfigReaderFromGitHub();
+            : new FromGitHubReader();
         
         if (cfgName != null) {
             this.useConfig(cfgName);
@@ -291,7 +299,7 @@ class Transliterator {
     
                 if (spl.length === 2) {
                     const areSame = spl[0] === spl[1]; // e.g. both are apostrophes: "' '"
-                    const firstCantBeUsedAtWordsBeginning = StringValueOrArrayHelpers.toDiacriticless(spl[0]).length > 1 && spl[0] === spl[1].toLocaleUpperCase(); // when using positional algo, some mid- and ending cases only can be fully upper-cased, not title-cased (because a word simply cannot start with it)
+                    const firstCantBeUsedAtWordsBeginning = Helpers.toDiacriticless(spl[0]).length > 1 && spl[0] === spl[1].toLocaleUpperCase(); // when using positional algo, some mid- and ending cases only can be fully upper-cased, not title-cased (because a word simply cannot start with it)
     
                     if (areSame || firstCantBeUsedAtWordsBeginning) {
                         return spl[1]; // return a single value (lower), not a pair
@@ -390,7 +398,7 @@ class Transliterator {
                 continue;
             }
             
-            let len = StringValueOrArrayHelpers.toDiacriticless(el).length;
+            let len = Helpers.toDiacriticless(el).length;
             
             if (len === 1) {
                 if (!getOnlyLower || el === el.toLowerCase()) {
@@ -741,9 +749,9 @@ class Transliterator {
             
             if (arrOrAffectionDict.length === 1) {
                 // Copy second one from the first one:
-                arrOrAffectionDict.push(StringValueOrArrayHelpers.toDiacriticless(arrOrAffectionDict[0]));
+                arrOrAffectionDict.push(Helpers.toDiacriticless(arrOrAffectionDict[0]));
             } else if (!doNotForce) { // arr.length > 1 and forced mode
-                arrOrAffectionDict[1] = StringValueOrArrayHelpers.toDiacriticless(arrOrAffectionDict[1]); // forced mode: ensure given second value doesn't have diacritics
+                arrOrAffectionDict[1] = Helpers.toDiacriticless(arrOrAffectionDict[1]); // forced mode: ensure given second value doesn't have diacritics
             } else {
                 // do nothing;
             } 
@@ -752,8 +760,8 @@ class Transliterator {
     
     static #completeByUpperAndTitleCased(/*[ref]*/arrOrDictOrMulti) {
         const toCaseFuncs = [ 
-            StringValueOrArrayHelpers.toTitleCase, 
-            StringValueOrArrayHelpers.toUpperCase 
+            Helpers.toTitleCase, 
+            Helpers.toUpperCase 
         ];
         // TODO: append func for 3 letters case (or probably each of possible combinations)
         
@@ -841,127 +849,5 @@ class Transliterator {
     }
 }
 
-class StringValueOrArrayHelpers {
-    /// E.g. "abc" will become "Abc", "...xyz" will become "...Xyz"
-    static toTitleCase(valOrArr) {
-        if (valOrArr == null) {
-            return null;
-        }
-        
-        // recursive calls for each array's element:
-        if (Array.isArray(valOrArr)) {
-            const titleCasedArr = [...valOrArr];
-    
-            for (let i = 0; i < titleCasedArr.length; ++i) {
-                titleCasedArr[i] = StringValueOrArrayHelpers.toTitleCase(titleCasedArr[i]);
-            }
-    
-            return titleCasedArr;
-        }
-        
-        const isNonCased = c => c != null 
-                ? c.toLowerCase() === c.toUpperCase() 
-                : true;
-
-        // the arg is a string value:
-        for (let i = 0; i < valOrArr.length; ++i) {
-            if (isNonCased(valOrArr.charAt(i))) {
-                continue; // until first 'uppercasable' char
-            }
-    
-            return valOrArr.slice(0, i + 1).toUpperCase() + valOrArr.slice(i + 1);
-        }
-        return valOrArr;
-    }
-
-    /// E.g. "abc" will become "ABC", "...xyz" will become "...XYZ"
-    static toUpperCase(valOrArr) {
-        if (valOrArr == null) {
-            return null;
-        }
-        
-        // recursive calls for each array's element:
-        if (Array.isArray(valOrArr)) {
-            const upperCasedArr = [...valOrArr];
-    
-            for (let i = 0; i < upperCasedArr.length; ++i) {
-                upperCasedArr[i] = StringValueOrArrayHelpers.toUpperCase(upperCasedArr[i]);
-            }
-    
-            return upperCasedArr;
-        }
-    
-        // the arg is a string value:
-        return valOrArr.toUpperCase();
-    }
-
-    static toDiacriticless(valOrArr) {
-        if (valOrArr == null) {
-            return null;
-        }
-    
-        // recursive calls for each array's element:
-        if (Array.isArray(valOrArr)) {
-            const diacriticlessArr = [...valOrArr];
-    
-            for (let i=0; i<diacriticlessArr.length; ++i) {
-                diacriticlessArr[i] = StringValueOrArrayHelpers.toDiacriticless(diacriticlessArr[i]);
-            }
-    
-            return diacriticlessArr;
-        }
-    
-        // the arg is a string value:
-
-        const someSpecialCases = {
-            "ł": "l", "Ł": "L",
-            "ı": "i", "İ": "I"
-        };
-
-        return someSpecialCases[valOrArr] != null 
-            ? someSpecialCases[valOrArr] 
-            : valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, ""); 
-    }
-}
-
-class DefaultConfigReaderFromGitHub {
-    static #PROJECT_HOME_LINK = `https://raw.githubusercontent.com/shevchenkoartem/t-literator-configs/master/`;
-
-    getConfigObject(cfgName) {
-        if (cfgName == null || !cfgName.length) {
-            return {};
-        }
-
-        let jsonText = DefaultConfigReaderFromGitHub.#httpGet(`${DefaultConfigReaderFromGitHub.#PROJECT_HOME_LINK}${cfgName}.config`);
-        jsonText = jsonText.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); // remove comments, not affecting web links
-        jsonText = jsonText.replace(/[\u202F\u00A0]/g, ' '); // replace a non-breaking space to a common one
-        
-        const config = JSON.parse(jsonText);
-        return config;
-    }
-
-    static #httpGet(url) {
-        const Request = typeof window === 'undefined'
-            ? /* Node.js */ require("xmlhttprequest").XMLHttpRequest // prereq: npm install xmlhttprequest
-            : /* browser */ XMLHttpRequest;
-        
-        const req = new Request();
-        const isAsync = false;
-        req.open("GET", url, isAsync);
-        req.send(null);
-        return req.responseText;
-    }
-}
-
 // If it's Node.js:
 if (typeof window === 'undefined') { module.exports = Transliterator; }
-
-//document.body.innerHTML = getTransliteration(document.body.innerHTML);
-
-// // USAGE
-// // FileDataReader - some class which has method getConfigObject(cfgName) 
-// // // (reads config json-file and parses it)
-// const trans = new Transliterator(new FileDataReader());
-// trans.useConfig(cfgName); // can be called again with another config
-// const doNotUseDiacritic = false;
-// const result = trans.transliterate("some text", /*[can be simply omitted]*/doNotUseDiacritic);
