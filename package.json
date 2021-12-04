@@ -6,6 +6,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "uglify-js": "^3.14.4",
     "xmlhttprequest": "^1.8.0"
   }
 }

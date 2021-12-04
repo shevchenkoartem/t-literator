@@ -1,0 +1,44 @@
+name: Minify Code & Run Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [17.x]
+
+    steps:
+    - name: Checkout repo content
+      uses: actions/checkout@v2
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v2
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Install dependencies from package-lock.json and validate
+      run: npm ci
+
+    # need?
+    - run: npm run build --if-present
+
+    - name: Execute join-scripts-into-single-one.js script
+      run: node ./deploy/scripts/join-scripts-into-single-one.js
+
+    #- run: npm test
+
+    - name: Commit and push changes
+      uses: EndBug/add-and-commit@v7
+      with:
+        author_name: GitHub Actions
+        author_email: action@github.com
+        message: "[bot] Deploy a single minified script after '${{ github.event.head_commit.message }}'"
