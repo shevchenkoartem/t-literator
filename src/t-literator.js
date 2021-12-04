@@ -446,6 +446,7 @@ class Transliterator {
         this.#config.link = this.#config.link ?? '';
         this.#config.from = this.#config.from ?? '';
         this.#config.to = this.#config.to ?? '';
+        ///this.#config.year = this.#config.year ?? -1;
         ////this.#config.substitutionForErrors = this.#config.substitutionForErrors ?? '';
     
         this.#config.affectVowelNotConsonantWhenSofting =
