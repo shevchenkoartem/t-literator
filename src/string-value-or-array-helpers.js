@@ -4,28 +4,28 @@ class StringValueOrArrayHelpers {
         if (valOrArr == null) {
             return null;
         }
-        
+
         // recursive calls for each array's element:
         if (Array.isArray(valOrArr)) {
             const titleCasedArr = [...valOrArr];
-    
+
             for (let i = 0; i < titleCasedArr.length; ++i) {
                 titleCasedArr[i] = StringValueOrArrayHelpers.toTitleCase(titleCasedArr[i]);
             }
-    
+
             return titleCasedArr;
         }
-        
-        const isNonCased = c => c != null 
-                ? c.toLowerCase() === c.toUpperCase() 
-                : true;
+
+        const isNonCased = c => c != null
+            ? c.toLowerCase() === c.toUpperCase()
+            : true;
 
         // the arg is a string value:
         for (let i = 0; i < valOrArr.length; ++i) {
             if (isNonCased(valOrArr.charAt(i))) {
                 continue; // until first 'uppercasable' char
             }
-    
+
             return valOrArr.slice(0, i + 1).toUpperCase() + valOrArr.slice(i + 1);
         }
         return valOrArr;
@@ -36,18 +36,18 @@ class StringValueOrArrayHelpers {
         if (valOrArr == null) {
             return null;
         }
-        
+
         // recursive calls for each array's element:
         if (Array.isArray(valOrArr)) {
             const upperCasedArr = [...valOrArr];
-    
+
             for (let i = 0; i < upperCasedArr.length; ++i) {
                 upperCasedArr[i] = StringValueOrArrayHelpers.toUpperCase(upperCasedArr[i]);
             }
-    
+
             return upperCasedArr;
         }
-    
+
         // the arg is a string value:
         return valOrArr.toUpperCase();
     }
@@ -56,18 +56,18 @@ class StringValueOrArrayHelpers {
         if (valOrArr == null) {
             return null;
         }
-    
+
         // recursive calls for each array's element:
         if (Array.isArray(valOrArr)) {
             const diacriticlessArr = [...valOrArr];
-    
-            for (let i=0; i<diacriticlessArr.length; ++i) {
+
+            for (let i = 0; i < diacriticlessArr.length; ++i) {
                 diacriticlessArr[i] = StringValueOrArrayHelpers.toDiacriticless(diacriticlessArr[i]);
             }
-    
+
             return diacriticlessArr;
         }
-    
+
         // the arg is a string value:
 
         const someSpecialCases = {
@@ -75,9 +75,9 @@ class StringValueOrArrayHelpers {
             "ı": "i", "İ": "I"
         };
 
-        return someSpecialCases[valOrArr] != null 
-            ? someSpecialCases[valOrArr] 
-            : valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, ""); 
+        return someSpecialCases[valOrArr] != null
+            ? someSpecialCases[valOrArr]
+            : valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, "");
     }
 }
 
