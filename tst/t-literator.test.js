@@ -7,7 +7,7 @@ console.log(`Tests are running from dir: ${__dirname}`);
 const fdr = new FileDataReader(path.normalize(path.join(__dirname, '../')));
 const trans = new Transliterator(fdr); // TODO: try pass just a func instead of a whole object
 
-const inputRawData = fdr.readTestCheck('_actual_input', 'trans');
+const inputRawData = fdr.readTestCheck('_actual_input', 'trans', true);
 eval("var input = `" + inputRawData + "`"); // TODO: get rid of var
 
 const expectedUkrLetters = [ // TODO: move to file
@@ -24,12 +24,15 @@ const expectedUkrLetters = [ // TODO: move to file
 const testConfig = function (cfgName, doNotUseDiacritic) {
     const emptyCfgStr = 'an empty config';
     const diacritiless = 'diacritiless';
+    const suffix = doNotUseDiacritic ? '_nd' : '';
 
-    if (!cfgName.length) { // testing an empty config
+    let expectedRawData = !cfgName.length ? ''
+        : fdr.readTestCheck(`exp_output_${cfgName}${suffix}`, 'trans', true);
+
+    if (expectedRawData === '') { 
+        // testing an empty or uncovered config
         eval("var expectedTransliteration = input"); // TODO: get rid of var
     } else {
-        const suffix = doNotUseDiacritic ? '_nd' : '';
-        const expectedRawData = fdr.readTestCheck(`exp_output_${cfgName}${suffix}`, 'trans');
         eval("var expectedTransliteration = `" + expectedRawData + "`");
     }
 
@@ -48,11 +51,13 @@ const testConfig = function (cfgName, doNotUseDiacritic) {
     });
 
     const actualTransAlphabet = trans.getTransliteratedAlphabet();
-    if (!cfgName.length) { // testing an empty config
+    expectedRawData = !cfgName.length ? '' 
+        : fdr.readTestCheck(`exp_alphabet_${cfgName}${suffix}`, 'alphabet', true);
+
+    if (expectedRawData === '') { 
+        // testing an empty or uncovered config
         eval("var expectedTransAlphabet = []"); // TODO: get rid of var
     } else {
-        const suffix = doNotUseDiacritic ? '_nd' : '';
-        const expectedRawData = fdr.readTestCheck(`exp_alphabet_${cfgName}${suffix}`, 'alphabet');
         eval("var expectedTransAlphabet = " + expectedRawData);
     }
     test(`test getting transliterated alphabet using ${cfgName.length ? cfgName : emptyCfgStr}` + (doNotUseDiacritic ? ` (${diacritiless})` : '') + ' config', () => {
@@ -60,11 +65,12 @@ const testConfig = function (cfgName, doNotUseDiacritic) {
     });
 
     const actualTransInfo = trans.getConfigTransliterationInfo();
-    if (!cfgName.length) { // testing an empty config
+    expectedRawData = !cfgName.length ? '' 
+        : fdr.readTestCheck(`exp_info_${cfgName}${suffix}`, 'info', true);
+    if (expectedRawData === '') { 
+        // testing an empty or uncovered config
         eval("var expectedTransInfo = {}"); // TODO: get rid of var
     } else {
-        const suffix = doNotUseDiacritic ? '_nd' : '';
-        const expectedRawData = fdr.readTestCheck(`exp_info_${cfgName}${suffix}`, 'info');
         eval("var expectedTransInfo = " + expectedRawData);
     }
     test(`test getting transliteration info using ${cfgName.length ? cfgName : emptyCfgStr}` + (doNotUseDiacritic ? ` (${diacritiless})` : '') + ' config', () => {
@@ -72,19 +78,20 @@ const testConfig = function (cfgName, doNotUseDiacritic) {
     });
 };
 
-const configs = [
-    'abecadlo',
-    'jireckivka',
-    'heohraf',
-    'pasport',
-    'lucukivka',
-    'temivka',
-    'pingvinivka',
-    '',
-
-    //'volapuk-askii',
-    //'volapuk-unicode',
-];
+const configs = Object.keys(fdr.getConfigPaths())
+    .concat(['']);
+// [
+//     'abecadlo',
+//     'jireckivka',
+//     'heohraf',
+//     'pasport',
+//     'lucukivka',
+//     'temivka',
+//     'pingvinivka',
+//     '',
+//     'volapuk-askii',
+//     'volapuk-unicode',
+// ];
 
 for (const conf of configs) {
     testConfig(conf);

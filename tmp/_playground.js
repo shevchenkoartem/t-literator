@@ -14,7 +14,8 @@ const configs = [
     // 'heohraf'
     //'pasport',
     //'lucukivka',
-    'pingvinivka',
+    //'pingvinivka',
+    'naukova-trad'
     // 'tem-shevchenko',
     //''
 ];

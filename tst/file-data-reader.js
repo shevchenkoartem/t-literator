@@ -36,14 +36,21 @@ class FileDataReader {
             options);
     }
 
-    readFileUsingRelPath(folderPart, fileName) {
+    readFileUsingRelPath(folderPart, fileName, returnEmptyIfNotExist) {
         const absoluteFullName = path.join(
             this.#projectHomeDir,
             folderPart ?? '',
             fileName ?? ''
         );
 
-        return fs.readFileSync(absoluteFullName, 'utf8');
+        try {
+            return fs.readFileSync(absoluteFullName, 'utf8');
+        } catch(e) {
+            if (!returnEmptyIfNotExist) { 
+                throw e; 
+            }
+            return ''; 
+        }
     }
 
     getConfigObject(cfgName) {
@@ -59,13 +66,17 @@ class FileDataReader {
         return config;
     }
 
-    readTestCheck(chkName, folder) {
+    readTestCheck(chkName, folder, returnEmptyIfNotExist) {
         const folderPath = path.join(
             `/configs/test-checks`,
             folder ?? ''
         );
-        const res = this.readFileUsingRelPath(folderPath, `${chkName}.txt`);
+        const res = this.readFileUsingRelPath(folderPath, `${chkName}.txt`, returnEmptyIfNotExist);
         return res;
+    }
+
+    getConfigPaths() {
+        return {...this.#configPaths};
     }
 }
 
