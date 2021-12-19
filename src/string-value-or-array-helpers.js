@@ -32,7 +32,8 @@ class StringValueOrArrayHelpers {
     }
 
     /// E.g. "abc" will become "ABC", "...xyz" will become "...XYZ"
-    static toUpperCase(valOrArr) {
+    /// exceptionalCaseRules is a dictionary for special lower-upper pairs
+    static toUpperCase(valOrArr, exceptionalCaseRules) {
         if (valOrArr == null) {
             return null;
         }
@@ -49,7 +50,11 @@ class StringValueOrArrayHelpers {
         }
 
         // the arg is a string value:
-        return valOrArr.toUpperCase();
+        let res = valOrArr;
+        for (const [lower, upper] of Object.entries(exceptionalCaseRules ?? {})) {
+            res = res.replaceAll(lower, upper);
+        }
+        return res.toUpperCase();
     }
 
     static toDiacriticless(valOrArr) {
