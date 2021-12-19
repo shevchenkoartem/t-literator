@@ -7,7 +7,7 @@ console.log(`Tests are running from dir: ${__dirname}`);
 const fdr = new FileDataReader(path.normalize(path.join(__dirname, '../')));
 const trans = new Transliterator(fdr); // TODO: try pass just a func instead of a whole object
 
-const inputRawData = fdr.readTestCheck('_actual_input', 'trans', true);
+const inputRawData = fdr.readTestCheck('_actual_input', 'trans');
 eval("var input = `" + inputRawData + "`"); // TODO: get rid of var
 
 const expectedUkrLetters = [ // TODO: move to file
@@ -33,7 +33,10 @@ const testConfig = function (cfgName, doNotUseDiacritic) {
         // testing an empty or uncovered config
         eval("var expectedTransliteration = input"); // TODO: get rid of var
     } else {
-        eval("var expectedTransliteration = `" + expectedRawData + "`");
+        const toEval = "var expectedTransliteration = `" 
+            + expectedRawData.replaceAll('\\', '\\\\').replaceAll('`', '\\`')
+            + "`";
+        eval(toEval);
     }
 
     trans.useConfig(cfgName);
