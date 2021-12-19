@@ -526,17 +526,28 @@ class Transliterator {
     }
 
     // Fixes uppercased issues, e.g. "ЩУКА"->"ŠčUKA" to "ŠČUKA"  
-    #detectAndFixCapsLocked(txt, onceAgain) {
+    #detectAndFixCapsLocked(txt, repeatTimesLeft) {
         let res = txt;
+        repeatTimesLeft = repeatTimesLeft ?? 2;
 
-        // IssueAFTER or BEFOREIssue (a(1), b(2), c(3) and d(4) groups respectively)
-        const pattern = /(?<a>\p{Lu}\p{Ll}+)(?<b>\p{Lu}+)|(?<c>\p{Lu}+)(?<d>\p{Lu}\p{Ll}+)/gu;
+        // IssueAFTER or BEFOREIssue (a(1), b(2), c(3) and d(5) groups respectively)
+        // TODO q - for apostrophes todo append first OR and other spec symbols
+        const groupIdx = {              
+            a: 1,
+            b: 2,
+            c: 3,
+            q: 4,
+            d: 5
+        };
+        
+        const pattern = /(?<a>\p{Lu}\p{Ll}+)(?<b>\p{Lu}+)|(?<c>\p{Lu}+)(?<q>['"]*)(?<d>\p{Lu}\p{Ll}+)/gu;
         const matches = [...res.matchAll(pattern)];
 
         const mappedMatches = matches.map(m => ({
-            probablyIssue: m[1] != null ? m[1] : m[4],
-            after: m[2] != null ? m[2] : '',
-            before: m[3] != null ? m[3] : '',
+            probablyIssue: m[groupIdx.a] != null ? m[groupIdx.a] : m[groupIdx.d],
+            after: m[groupIdx.b] != null ? m[groupIdx.b] : '',
+            before: m[groupIdx.c] != null ? m[groupIdx.c] : '',
+            specSymb2: m[groupIdx.q] != null ? m[groupIdx.q] : '',
             index: m.index
         }));
 
@@ -549,13 +560,13 @@ class Transliterator {
                     + replacement
                     + str.substr(index + replacement.length);
 
-                res = replaceAt(res, m.index, m.before + m.probablyIssue.toUpperCase() + m.after);
+                res = replaceAt(res, m.index, m.before + m.specSymb2 + Helpers.toUpperCase(m.probablyIssue, this.#config.exceptionalCaseRules) + m.after);
             }
         }
 
-        return onceAgain
+        return repeatTimesLeft === 0
             ? res
-            : this.#detectAndFixCapsLocked(res, true); // run twice for better results
+            : this.#detectAndFixCapsLocked(res, repeatTimesLeft - 1); // run several times for better results
     }
 
     #replaceAllByDict(src, dict, useLocationInWordAlgo) {
