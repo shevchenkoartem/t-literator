@@ -94,7 +94,9 @@ const readJsFilesAndJoinThem = function (error, filenames) {
     }
 
     console.log('\tJoining all files\' contents into a single one...');
-    let result = Object.values(fileContents).join('\n\n');
+    let result = [ 'const T_LITERATOR_CONFIGS =' + readFile(path.join('configs', 'deploy', 'result'), 't-literator-configs.json') + ';' ] // TODO
+        .concat(Object.values(fileContents))
+        .join('\n\n');
 
     console.log('\tMinifying the single content...');
     result = minifyJsCode(result);
