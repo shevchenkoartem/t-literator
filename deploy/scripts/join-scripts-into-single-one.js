@@ -2,93 +2,109 @@ console.log('join-scripts-into-single-one.js script execution:');
 
 const UglifyJS = require("uglify-js"); // prereq: npm install uglify-js
 const fs = require('fs');
+const path = require('path');
 
 const tLiteratorPath = './';
+console.log('\tThe root [t-literator-js] folder is ' + path.resolve(tLiteratorPath));
 
-fs.readdir(tLiteratorPath + 'src/', function (error, filenames) {
+const readFile = function(relativeDirPath, filename) {
+    const fullFilename = path.join(tLiteratorPath, relativeDirPath, filename);
+    console.log(`\tReading ${fullFilename} file...`);
+    return fs.readFileSync(fullFilename, 'utf-8');
+};
+
+const minifyJsCode = function(jsCode) {
+    const options = {
+        toplevel: false,
+        compress: {
+            global_defs: {
+                "@alert": "console.log"
+            },
+            passes: 3
+        }
+    };
+    const minified = UglifyJS.minify(jsCode, options);
+
+    if (minified.error != null) {
+        console.error('!!! Error !!! ' + minified.error);
+        return jsCode;
+    }
+
+    if (minified.warnings != null) {
+        console.log('Warnings:');
+        minified.warnings.forEach(w => console.warn(w));
+    }
+
+    return minified.code;
+};
+
+const saveIntoFileWithBackingUp = function(dir, fileName, content) {
+    const fileFullName = path.join(dir, fileName);
+    const backupFileName = fileName.split('.')[0] +  '.back';
+    const backupFileFullName = path.join(dir, backupFileName);
+
+    if (fs.existsSync(backupFileFullName)) {
+        console.log(`\tRemoving old backup ${backupFileName}...`);
+        try {
+            fs.unlinkSync(backupFileFullName);
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+    }
+
+    if (fs.existsSync(fileFullName)) {
+        console.log(`\tBacking up previous ${fileName} as ${backupFileName}...`);
+        try {
+            fs.renameSync(fileFullName, backupFileFullName);
+        } catch (e) {
+            console.error(e);
+            return false;
+        }
+    }
+
     let success = true;
 
-    if (error != null) {
-        success = false;
-        console.log(error);
-        return;
-    } else {
-        filenames = filenames.sort();
-
-        const fileContents = {};
-
-        for (const filename of filenames) {
-            const fullFilename = tLiteratorPath + 'src/' + filename;
-            console.log(`\tReading ${fullFilename} file...`);
-
-            const content = fs.readFileSync(fullFilename, 'utf-8');
-            fileContents[filename] = content;
-        }
-
-        console.log('\tJoining all files\' contents into a single one...');
-        let result = Object.values(fileContents).join('\n\n');
-
-        console.log('\tMinifying the single content...');
-        const options = {
-            toplevel: false,
-            compress: {
-                global_defs: {
-                    "@alert": "console.log"
-                },
-                passes: 3
-            }
-        };
-        const minified = UglifyJS.minify(result, options);
-
-        if (minified.error != null) {
-            console.error('!!! Error !!! ' + minified.error);
-            return;
-        }
-
-        if (minified.warnings != null) {
-            console.log('Warnings:');
-            minified.warnings.forEach(w => console.warn(w));
-            return;
-        }
-
-        result = minified.code;
-
-        const singleFileName = 't-literator-js.js';
-        const singleFilFulleName = tLiteratorPath + 'deploy/result/' + singleFileName;
-        const singlePrevFileName = 't-literator-js.back';
-        const singlePrevFilFulleName = tLiteratorPath + 'deploy/result/' + singlePrevFileName;
-
-        if (fs.existsSync(singlePrevFilFulleName)) {
-            try {
-                fs.unlinkSync(singlePrevFilFulleName);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        if (fs.existsSync(singleFilFulleName)) {
-            console.log(`\tSaving previously done ${singleFileName} as ${singlePrevFileName}...`);
-            try {
-                fs.renameSync(singleFilFulleName, singlePrevFilFulleName);
-            } catch (e) {
-                console.error(e);
-            }
-        }
-
-        console.log(`\tCreating a new ${singleFileName} file...`);
-        fs.writeFile(
-            singleFilFulleName,
-            result,
-            function (err) {
+    console.log(`\tCreating a new ${fileName} file...`);
+    fs.writeFile(
+        fileFullName,
+        content,
+        function (err) {
+            if (err != null) {
                 success = false;
-                if (err != null) {
-                    console.log(err);
-                }
+                console.error(err);
             }
-        );
+        }
+    );
+
+    return success;
+};
+
+const readJsFilesAndJoinThem = function (error, filenames) {
+    if (error != null) {
+        console.error(error);
+        return;
     }
+
+    filenames = filenames.sort();
+    const fileContents = {};
+
+    for (const filename of filenames) {
+        fileContents[filename] = readFile('src', filename);
+    }
+
+    console.log('\tJoining all files\' contents into a single one...');
+    let result = Object.values(fileContents).join('\n\n');
+
+    console.log('\tMinifying the single content...');
+    result = minifyJsCode(result);
+
+    const resultDirPath = path.join(tLiteratorPath,'deploy', 'result');
+    const success = saveIntoFileWithBackingUp(resultDirPath, 't-literator-js.js', result);
 
     if (success) {
         console.log('\t=====\n\tThe script is completed successfully!');
     }
-});
+};
+
+fs.readdir(path.join(tLiteratorPath,'src'), readJsFilesAndJoinThem);
