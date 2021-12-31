@@ -309,10 +309,13 @@ class Transliterator {
                 return toPush;
             };
 
+            // at(-1) is not supported by Safari :(
+            const last = (arr) => (arr == null || !arr.length) ? undefined : arr[arr.length - 1];
+
             result[upper + ' ' + lower] = currResults
                 .filter((v, i, s) => s
-                    .map(m => m.split(' ').at(-1).toLocaleUpperCase())
-                    .indexOf(v.split(' ').at(-1).toLocaleUpperCase())
+                    .map(m => last(m.split(' ')).toLocaleUpperCase())
+                    .indexOf(last(v.split(' ')).toLocaleUpperCase())
                     === i) // only with unique latest value (case insens.)
                 .map(v => (v.length && v.match(/\S.*/) != null) ? v : '—') // if whitespaced or empty - replace with '—'
                 .map(v => transformIfNeeded(v))
