@@ -44,8 +44,8 @@ let configs = [
     //'naukova-trad'
     //"ipa",
     //'bgn-pcgn-65'
-    'nice-cyr'
-    // 'tem-shevchenko',
+    //'nice-cyr'
+    'temivka',
     //''
 ];
 
@@ -64,5 +64,5 @@ for (const conf of configs) {
     //console.log(t.transliterate(`ЦІЄЇ СІМ'Ї`));
 
 
-    createTestChecksResults(conf);
+    //createTestChecksResults(conf);
 }

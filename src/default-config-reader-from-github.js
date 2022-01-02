@@ -1,15 +1,15 @@
 class DefaultConfigReaderFromGitHub {
     static #PROJECT_HOME_LINK = `https://raw.githubusercontent.com/shevchenkoartem/t-literator-configs/master/`;
 
-    getConfigObject(cfgName) {
-        if (cfgName == null || !cfgName.length) {
+    getConfigObject(cfgCode) {
+        if (cfgCode == null || !cfgCode.length) {
             return {};
         }
 
         // TODO: think about additional/configs
 
         // TODO: consider subfolders:
-        let jsonText = DefaultConfigReaderFromGitHub.#httpGet(`${DefaultConfigReaderFromGitHub.#PROJECT_HOME_LINK}src/${cfgName}.config`);
+        let jsonText = DefaultConfigReaderFromGitHub.#httpGet(`${DefaultConfigReaderFromGitHub.#PROJECT_HOME_LINK}src/${cfgCode}.config`);
         jsonText = jsonText.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); // remove comments, not affecting web links
         jsonText = jsonText.replace(/[\u202F\u00A0]/g, ' '); // replace a non-breaking space to a common one
 

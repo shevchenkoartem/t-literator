@@ -53,12 +53,16 @@ class FileDataReader {
         }
     }
 
-    getConfigObject(cfgName) {
-        if (cfgName == null || !cfgName.length || !(cfgName in this.#configPaths)) {
-            return {};
+    getConfigObject(cfgCode) {
+        if (cfgCode == null) {
+            return undefined;
         }
 
-        let jsonText = fs.readFileSync(this.#configPaths[cfgName], 'utf8');
+        if (!cfgCode.length || !(cfgCode in this.#configPaths)) {
+            return { code: cfgCode };
+        }
+
+        let jsonText = fs.readFileSync(this.#configPaths[cfgCode], 'utf8');
         jsonText = jsonText.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); // remove comments, not affecting web links
         jsonText = jsonText.replace(/[\u202F\u00A0]/, ' '); // replace a non-breaking space to a common one
 

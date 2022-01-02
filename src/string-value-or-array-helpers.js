@@ -84,6 +84,16 @@ class StringValueOrArrayHelpers {
             ? someSpecialCases[valOrArr]
             : valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, "");
     }
+
+    //TODO: rethink name:
+    //get rid of useDiacritics
+    static flatValuesAt(obj, dontUseDiacritics) {
+        const indexToGet = dontUseDiacritics ? 1 : 0;
+        return Object.values(obj).flatMap(val =>
+            val.constructor === Object
+                ? StringValueOrArrayHelpers.flatValuesAt(val, dontUseDiacritics)
+                : val[indexToGet]);
+    }
 }
 
 // If it's Node.js:
