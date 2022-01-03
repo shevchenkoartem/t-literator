@@ -1,5 +1,5 @@
-const NormalizedConfig = typeof window === 'undefined'
-    ? /* Node.js */ require('./normalized-config')
+const NormalizedCfg = typeof window === 'undefined'
+    ? /* Node.js */ require('./1-normalized-config')
     : /* browser */ NormalizedConfig;
 
 class ConfigsCollection {
@@ -39,7 +39,7 @@ class ConfigsCollection {
 
         let config = this.#configs[configCode];
         if (!config.isNormalized) {
-            this.#configs[configCode] = new NormalizedConfig(config);
+            this.#configs[configCode] = new NormalizedCfg(config);
             config = this.#configs[configCode];
         }
 

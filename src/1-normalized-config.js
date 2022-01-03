@@ -1,5 +1,5 @@
-const Helpers = typeof window === 'undefined'
-    ? /* Node.js */ require('./string-value-or-array-helpers')
+const Hlprs = typeof window === 'undefined'
+    ? /* Node.js */ require('./0-string-value-or-array-helpers')
     : /* browser */ StringValueOrArrayHelpers;
 
 // A wrapper over a raw config
@@ -57,14 +57,14 @@ class NormalizedConfig {
     getDigraphs() {
         const cfg = this.#config;
         const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
-        const letterHeap = Helpers.flatValuesAt(cfg.beforeStartDict, dontUseDiacritics)
-            .concat(Helpers.flatValuesAt(cfg.dict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(cfg.apostrophesSingleKeyDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(cfg.softableConsonantsDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(cfg.softingVowelsMultiDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(cfg.softingSignsMultiDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(cfg.otherLanguagesLettersDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(cfg.afterFinishDict, dontUseDiacritics));
+        const letterHeap = Hlprs.flatValuesAt(cfg.beforeStartDict, dontUseDiacritics)
+            .concat(Hlprs.flatValuesAt(cfg.dict, dontUseDiacritics))
+            .concat(Hlprs.flatValuesAt(cfg.apostrophesSingleKeyDict, dontUseDiacritics))
+            .concat(Hlprs.flatValuesAt(cfg.softableConsonantsDict, dontUseDiacritics))
+            .concat(Hlprs.flatValuesAt(cfg.softingVowelsMultiDict, dontUseDiacritics))
+            .concat(Hlprs.flatValuesAt(cfg.softingSignsMultiDict, dontUseDiacritics))
+            .concat(Hlprs.flatValuesAt(cfg.otherLanguagesLettersDict, dontUseDiacritics))
+            .concat(Hlprs.flatValuesAt(cfg.afterFinishDict, dontUseDiacritics));
 
         const digraphs = [];
         for (const el of letterHeap) {
@@ -241,9 +241,9 @@ class NormalizedConfig {
 
             if (arrOrAffectionDict.length === 1) {
                 // Copy second one from the first one:
-                arrOrAffectionDict.push(Helpers.toDiacriticless(arrOrAffectionDict[0]));
+                arrOrAffectionDict.push(Hlprs.toDiacriticless(arrOrAffectionDict[0]));
             } else if (!doNotForce) { // arr.length > 1 and forced mode
-                arrOrAffectionDict[1] = Helpers.toDiacriticless(arrOrAffectionDict[1]); // forced mode: ensure given second value doesn't have diacritics
+                arrOrAffectionDict[1] = Hlprs.toDiacriticless(arrOrAffectionDict[1]); // forced mode: ensure given second value doesn't have diacritics
             } else {
                 // do nothing;
             }
@@ -252,8 +252,8 @@ class NormalizedConfig {
 
     static #completeByUpperAndTitleCased(/*[ref]*/arrOrDictOrMulti) {
         const toCaseFuncs = [
-            Helpers.toTitleCase,
-            Helpers.toUpperCase
+            Hlprs.toTitleCase,
+            Hlprs.toUpperCase
         ];
         // TODO: append func for 3 letters case (or probably each of possible combinations)
 

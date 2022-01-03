@@ -1,4 +1,4 @@
-const Transliterator = require('../src/transliterator');
+const Transliterator = require('../src/3-transliterator');
 const FileDataReader = require('./file-data-reader');
 const path = require('path');
 

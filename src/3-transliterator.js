@@ -1,18 +1,18 @@
-const NormalizedConfig = typeof window === 'undefined'
-    ? /* Node.js */ require('./normalized-config')
-    : /* browser */ NormalizedConfig;
-
-const ConfigsCollection = typeof window === 'undefined'
-    ? /* Node.js */ require('./configs-collection')
-    : /* browser */ ConfigsCollection;
-
 const Helpers = typeof window === 'undefined'
-    ? /* Node.js */ require('./string-value-or-array-helpers')
+    ? /* Node.js */ require('./0-string-value-or-array-helpers')
     : /* browser */ StringValueOrArrayHelpers;
 
 const FromGitHubReader = typeof window === 'undefined'
-    ? /* Node.js */ require('./default-config-reader-from-github')
+    ? /* Node.js */ require('./0-default-config-reader-from-github')
     : /* browser */ DefaultConfigReaderFromGitHub;
+
+const Config = typeof window === 'undefined'
+    ? /* Node.js */ require('./1-normalized-config')
+    : /* browser */ NormalizedConfig;
+
+const Configs = typeof window === 'undefined'
+    ? /* Node.js */ require('./2-configs-collection')
+    : /* browser */ ConfigsCollection;
 
 class Transliterator {
     #WORD_START = '【⟨'; // TODO: make static?
@@ -45,7 +45,7 @@ class Transliterator {
             this.#implementingGetConfigObject = new FromGitHubReader();
         }
 
-        this.#configsCache = new ConfigsCollection(rawConfigsToInitialize);
+        this.#configsCache = new Configs(rawConfigsToInitialize);
 
         if (cfgName != null) {
             this.useConfig(cfgName);
@@ -81,9 +81,9 @@ class Transliterator {
         for (const [softingVow, softingVowVals] of Object.entries(this.#config.softingVowelsMultiDict)) {
             for (const unsoftableCon of this.#config.unsoftableConsonants) {
                 const softedVowVals = /*this.#config.affectVowelNotConsonantWhenSofting
-                    ? softingVowVals[NormalizedConfig.AFFECTING]
+                    ? softingVowVals[Config.AFFECTING]
                     : */
-                    softingVowVals[NormalizedConfig.AFFECTED]; // when con is unsoftable, vow is forcibly soften
+                    softingVowVals[Config.AFFECTED]; // when con is unsoftable, vow is forcibly soften
 
                 if (this.#config.useLocationInWordAlgo && Array.isArray(softedVowVals[indexToGet])) {
                     const softedVowValLocated = Transliterator.#getPositionalValue(softedVowVals[indexToGet], 2);
@@ -109,8 +109,8 @@ class Transliterator {
                     ? conToSoften
                     : Transliterator.#getPositionalValue(softedConVals[indexToGet]);
 
-                if (this.#config.useLocationInWordAlgo && Array.isArray(softingVowVals[NormalizedConfig.AFFECTING][indexToGet])) {
-                    const vowAfterSofteningLocated = Transliterator.#getPositionalValue(softingVowVals[NormalizedConfig.AFFECTING][indexToGet], 2);
+                if (this.#config.useLocationInWordAlgo && Array.isArray(softingVowVals[Config.AFFECTING][indexToGet])) {
+                    const vowAfterSofteningLocated = Transliterator.#getPositionalValue(softingVowVals[Config.AFFECTING][indexToGet], 2);
                     lat = lat.replaceAll(
                         conToSoften + softingVow + this.#WORD_END,
                         conAfterSoftening + vowAfterSofteningLocated + this.#WORD_END
@@ -118,7 +118,7 @@ class Transliterator {
                     // TODO: + beginning with softed
                 }
 
-                const vowAfterSoftening = Transliterator.#getPositionalValue(softingVowVals[NormalizedConfig.AFFECTING][indexToGet]);
+                const vowAfterSoftening = Transliterator.#getPositionalValue(softingVowVals[Config.AFFECTING][indexToGet]);
                 lat = lat.replaceAll(
                     conToSoften + softingVow,
                     conAfterSoftening + vowAfterSoftening
@@ -132,7 +132,7 @@ class Transliterator {
                 // TODO: consider useLocationInWordAlgo!!!
                 lat = lat.replaceAll(
                     unsoftableCon + softingSign,
-                    unsoftableCon + softingSignSubDict[NormalizedConfig.AFFECTED][indexToGet]
+                    unsoftableCon + softingSignSubDict[Config.AFFECTED][indexToGet]
                 );
             }
 
@@ -141,8 +141,8 @@ class Transliterator {
 
                 const conAfterSoftening = Transliterator.#getPositionalValue(softedConVals[indexToGet]);
 
-                if (this.#config.useLocationInWordAlgo && Array.isArray(softingSignSubDict[NormalizedConfig.AFFECTING][indexToGet])) {
-                    const softingSignAfterSofteningLocated = Transliterator.#getPositionalValue(softingSignSubDict[NormalizedConfig.AFFECTING][indexToGet], 2);
+                if (this.#config.useLocationInWordAlgo && Array.isArray(softingSignSubDict[Config.AFFECTING][indexToGet])) {
+                    const softingSignAfterSofteningLocated = Transliterator.#getPositionalValue(softingSignSubDict[Config.AFFECTING][indexToGet], 2);
                     lat = lat.replaceAll(
                         conToSoften + softingSign + this.#WORD_END,
                         conAfterSoftening + softingSignAfterSofteningLocated + this.#WORD_END
@@ -150,14 +150,14 @@ class Transliterator {
                     // TODO: + beginning with softed
                 }
 
-                const softingSignAfterSoftening = Transliterator.#getPositionalValue(softingSignSubDict[NormalizedConfig.AFFECTING][indexToGet]);
+                const softingSignAfterSoftening = Transliterator.#getPositionalValue(softingSignSubDict[Config.AFFECTING][indexToGet]);
                 lat = lat.replaceAll(
                     conToSoften + softingSign,
                     conAfterSoftening + softingSignAfterSoftening
                 );
             }
 
-            lat = lat.replaceAll(softingSign, softingSignSubDict[NormalizedConfig.AFFECTED][indexToGet]); // if softing sign is used unexpectedly
+            lat = lat.replaceAll(softingSign, softingSignSubDict[Config.AFFECTED][indexToGet]); // if softing sign is used unexpectedly
         }
 
         lat = lat.replaceAll(tempApo, this.#config.apostrophesSingleKeyDict[apostrophesStr]); // Replace apostrophes
@@ -228,8 +228,8 @@ class Transliterator {
         let affectingLowerSoftingSignTransed;
 
         if (upperSoftingSign != null && lowerSoftingSign != null) {
-            affectingUpperSoftingSignTransed = Transliterator.#getPositionalValue(this.#config.softingSignsMultiDict[upperSoftingSign][NormalizedConfig.AFFECTING][indexToGet], 2);
-            affectingLowerSoftingSignTransed = Transliterator.#getPositionalValue(this.#config.softingSignsMultiDict[lowerSoftingSign][NormalizedConfig.AFFECTING][indexToGet], 2);
+            affectingUpperSoftingSignTransed = Transliterator.#getPositionalValue(this.#config.softingSignsMultiDict[upperSoftingSign][Config.AFFECTING][indexToGet], 2);
+            affectingLowerSoftingSignTransed = Transliterator.#getPositionalValue(this.#config.softingSignsMultiDict[lowerSoftingSign][Config.AFFECTING][indexToGet], 2);
         }
 
         const srcVowels = this.#getSourceVowels(true);

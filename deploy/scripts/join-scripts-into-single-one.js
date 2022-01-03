@@ -86,7 +86,7 @@ const readJsFilesAndJoinThem = function (error, filenames) {
         return;
     }
 
-    filenames = filenames.sort();
+    filenames = filenames.sort(); // a digit at the start of each name is for the right order
     const fileContents = {};
 
     for (const filename of filenames) {
