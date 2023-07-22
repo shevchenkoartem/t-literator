@@ -3,3 +3,5 @@
 node_modules
 .vscode
 coverage
+isolate-*.log
+profiling
