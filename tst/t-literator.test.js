@@ -47,7 +47,7 @@ const testConfig = function (cfgName, doNotUseDiacritic) {
             .toBe(expectedTransliteration);
     });
 
-    const actualAlphabet = trans.getSourceAlphabet();
+    const actualAlphabet = trans.getConfigSourceAlphabet();
     const expectedAlphabet = cfgName.length ? expectedUkrLetters : [];
     test(`test getting source alphabet using ${cfgName.length ? cfgName : emptyCfgStr}` + (doNotUseDiacritic ? ` (${diacritiless})` : '') + ' config', () => {
         expect(actualAlphabet).toEqual(expectedAlphabet);

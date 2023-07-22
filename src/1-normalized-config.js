@@ -5,42 +5,108 @@ const Hlprs = typeof window === 'undefined'
 // A wrapper over a raw config
 class NormalizedConfig {
     // todo: think how to make private:
-    static AFFECTING = 'affecting'; 
+    static AFFECTING = 'affecting';
     static AFFECTED = 'affected';
 
     #config = null; // todo: rename to wrappee?
+
+    #cache = {};
 
     constructor(rawConfig) {
         this.#config = {...rawConfig};
         this.#ensureNormalized();
     }
 
-    get #configCopy() {return {...this.#config}; }
+    get #configCopy() {
+        return {...this.#config};
+    }
 
     // TODO: think what to leave private:
     // TODO: make unmutual using configCopy?
     // TODO: use Proxy - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
-    get code() { return this.#config.code; }
-    get name() { return this.#config.name; }
-    get desc() { return this.#config.desc; }
-    get link() { return this.#config.link; }
-    get from() { return this.#config.from; }
-    get to() { return this.#config.to; }
-    get year() { return this.#config.year; }
-    get useLocationInWordAlgo() { return this.#config.useLocationInWordAlgo; }
-    get affectVowelNotConsonantWhenSofting() { return this.#config.affectVowelNotConsonantWhenSofting; }
-    get dict () { return this.#config.dict; }
-    get otherLanguagesLettersDict () { return this.#config.otherLanguagesLettersDict; }
-    get unsoftableConsonants() { return this.#config.unsoftableConsonants; }
-    get softableConsonantsDict () { return this.#config.softableConsonantsDict; }
-    get softingVowelsMultiDict () { return this.#config.softingVowelsMultiDict; }
-    get softingSignsMultiDict () { return this.#config.softingSignsMultiDict; }
-    get apostrophesSingleKeyDict () { return this.#config.apostrophesSingleKeyDict; }
-    get exceptionalCaseRules() { return this.#config.exceptionalCaseRules; }
-    get specSymbolsDict () { return this.#config.specSymbolsDict; }
-    get substitutionForErrors() { return this.#config.substitutionForErrors; }
-    get beforeStartDict () { return this.#config.beforeStartDict; }
-    get afterFinishDict () { return this.#config.afterFinishDict; }
+    get code() {
+        return this.#config.code;
+    }
+
+    get name() {
+        return this.#config.name;
+    }
+
+    get desc() {
+        return this.#config.desc;
+    }
+
+    get link() {
+        return this.#config.link;
+    }
+
+    get from() {
+        return this.#config.from;
+    }
+
+    get to() {
+        return this.#config.to;
+    }
+
+    get year() {
+        return this.#config.year;
+    }
+
+    get useLocationInWordAlgo() {
+        return this.#config.useLocationInWordAlgo;
+    }
+
+    get affectVowelNotConsonantWhenSofting() {
+        return this.#config.affectVowelNotConsonantWhenSofting;
+    }
+
+    get dict() {
+        return this.#config.dict;
+    }
+
+    get otherLanguagesLettersDict() {
+        return this.#config.otherLanguagesLettersDict;
+    }
+
+    get unsoftableConsonants() {
+        return this.#config.unsoftableConsonants;
+    }
+
+    get softableConsonantsDict() {
+        return this.#config.softableConsonantsDict;
+    }
+
+    get softingVowelsMultiDict() {
+        return this.#config.softingVowelsMultiDict;
+    }
+
+    get softingSignsMultiDict() {
+        return this.#config.softingSignsMultiDict;
+    }
+
+    get apostrophesSingleKeyDict() {
+        return this.#config.apostrophesSingleKeyDict;
+    }
+
+    get exceptionalCaseRules() {
+        return this.#config.exceptionalCaseRules;
+    }
+
+    get specSymbolsDict() {
+        return this.#config.specSymbolsDict;
+    }
+
+    get substitutionForErrors() {
+        return this.#config.substitutionForErrors;
+    }
+
+    get beforeStartDict() {
+        return this.#config.beforeStartDict;
+    }
+
+    get afterFinishDict() {
+        return this.#config.afterFinishDict;
+    }
 
     getProperty(propName) {
         if (!this.#config.hasOwnProperty(propName)) {
@@ -49,22 +115,124 @@ class NormalizedConfig {
         return this.#configCopy[propName];
     }
 
-    get isEmpty() { return this.#config != null; }
-    get isNormalized() { return this.#config.isNormalized; }
+    get isEmpty() {
+        return this.#config != null;
+    }
+
+    get isNormalized() {
+        return this.#config.isNormalized;
+    }
+
+    /**
+     * Returns unique sorted letters of the config's source alphabet.
+     * @param {boolean} getOnlyLower - Whether to return only lowercase letters.
+     * @param {boolean} includeOtherLangLetters - Whether to include letters from other languages.
+     * @returns {string[]} An array of unique sorted letters.
+     */
+    getSourceAlphabet(getOnlyLower, includeOtherLangLetters) {
+        const cacheKey = includeOtherLangLetters ? 'withOtherLangLetters' : 'withoutOtherLangLetters';
+
+        if (!this.#cache[cacheKey]) {
+            this.#cache[cacheKey] = this.#doGetSourceAlphabet(includeOtherLangLetters);
+        }
+
+        const alphabet = this.#cache[cacheKey];
+        return getOnlyLower ? this.#makeLowerAlphabet(alphabet) : alphabet;
+    }
+
+    #doGetSourceAlphabet(includeOtherLangLetters) {
+        const cfg = this.#config;
+
+        const letterHeap = [
+            cfg.unsoftableConsonants,
+            ...Object.keys(cfg.softingSignsMultiDict),
+            ...Object.keys(cfg.dict),
+            ...Object.keys(cfg.softableConsonantsDict),
+            ...Object.keys(cfg.softingVowelsMultiDict),
+            ...Object.keys(cfg.beforeStartDict),
+            ...(includeOtherLangLetters ? Object.keys(cfg.otherLanguagesLettersDict) : [])
+        ];
+
+        const letters = letterHeap.flatMap(el => [...el]);
+
+        const uniqueLetters = [...new Set(letters)];
+        return uniqueLetters
+            .filter(v => !includeOtherLangLetters // get rid of other languages' letters (if needed)
+                ? !Object.keys(cfg.otherLanguagesLettersDict).includes(v)
+                : true)
+            .sort(NormalizedConfig.alphabetOrderComparator);
+    }
+
+    #makeLowerAlphabet(array) {
+        const lowerAlphabet = array.map(c => c.toLowerCase());
+        return [...new Set(lowerAlphabet)]; // make unique
+    }
+
+    // TODO: would be nice to make it private when it's possible:
+    /**
+     * A custom comparator for sorting letters in a specific order.
+     * Certain characters are given higher priority than others.
+     * @param a The first letter to compare.
+     * @param b The second letter to compare.
+     * @return A negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
+     */
+    static alphabetOrderComparator(a, b) {
+        const shouldBeLast = '\'’*';
+        let signChanger = shouldBeLast.includes(a) !== shouldBeLast.includes(b) ? -1 : 1;
+
+        const specialGroupOrders = [
+            'AaȦȧÄä',
+            'EeĖėËë',
+            'IıİiÏï',
+            'OoȮȯÖö',
+            'UuU̇u̇Üü',
+            'YyẎẏŸÿ'
+        ];
+
+        for (const group of specialGroupOrders) {
+            const aInGroup = group.includes(a);
+            const bInGroup = group.includes(b);
+
+            if (aInGroup || bInGroup) {
+                if (aInGroup && bInGroup) {
+                    return group.indexOf(a).toString()
+                        .localeCompare(group.indexOf(b).toString());
+                } else {
+                    if (aInGroup) {
+                        a = group[0];
+                    }
+
+                    if (bInGroup) {
+                        b = group[0];
+                    }
+                    break;
+                }
+            }
+        }
+
+        return signChanger * a.localeCompare(b, 'uk', {caseFirst: 'upper'});
+    }
 
     // TODO /* test, rethink collections */  // TODO прочистити від шлаку
     // TODO: тут чи повернути в транслітератор?
     getDigraphs() {
         const cfg = this.#config;
         const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
-        const letterHeap = Hlprs.flatValuesAt(cfg.beforeStartDict, dontUseDiacritics)
-            .concat(Hlprs.flatValuesAt(cfg.dict, dontUseDiacritics))
-            .concat(Hlprs.flatValuesAt(cfg.apostrophesSingleKeyDict, dontUseDiacritics))
-            .concat(Hlprs.flatValuesAt(cfg.softableConsonantsDict, dontUseDiacritics))
-            .concat(Hlprs.flatValuesAt(cfg.softingVowelsMultiDict, dontUseDiacritics))
-            .concat(Hlprs.flatValuesAt(cfg.softingSignsMultiDict, dontUseDiacritics))
-            .concat(Hlprs.flatValuesAt(cfg.otherLanguagesLettersDict, dontUseDiacritics))
-            .concat(Hlprs.flatValuesAt(cfg.afterFinishDict, dontUseDiacritics));
+
+        let letterHeap = [];
+        const dictsToGetFrom = [
+            cfg.beforeStartDict,
+            cfg.dict,
+            cfg.apostrophesSingleKeyDict,
+            cfg.softableConsonantsDict,
+            cfg.softingVowelsMultiDict,
+            cfg.softingSignsMultiDict,
+            cfg.otherLanguagesLettersDict,
+            cfg.afterFinishDict
+        ];
+        for (const dict of dictsToGetFrom) {
+            letterHeap = letterHeap.concat(Hlprs.flatValuesAt(dict, dontUseDiacritics));
+        }
 
         const digraphs = [];
         for (const el of letterHeap) {
@@ -157,7 +325,7 @@ class NormalizedConfig {
         }
 
         if (keys == null || !keys.length) {
-            cfg.apostrophesSingleKeyDict = { "": "" };
+            cfg.apostrophesSingleKeyDict = {"": ""};
         } else {
             let i = 0;
             // ensure dict has a single key:
@@ -306,4 +474,6 @@ class NormalizedConfig {
 }
 
 // If it's Node.js:
-if (typeof window === 'undefined') { module.exports = NormalizedConfig; }
+if (typeof window === 'undefined') {
+    module.exports = NormalizedConfig;
+}

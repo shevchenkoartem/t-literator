@@ -23,26 +23,18 @@ class Transliterator {
     #config = {};
     #configsCache = {};
     #implementingGetConfigObject; // TODO: make this getting text, not JSON. And under the hood do JSON parsing with removing comments: txt.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1')
-    
+
     #useDiacritics = true; //TODO: get rid of it
 
-    constructor(/*[optional]*/ rawConfigsOrImplementingGetConfigObject, /*[optional]*/ cfgName) {
-        let useDefGetConfigObject = false;
+    constructor(rawConfigsOrImplementingGetConfigObject = new FromGitHubReader(), /*[optional]*/  cfgName) {
         let rawConfigsToInitialize = [];
-        
-        if (rawConfigsOrImplementingGetConfigObject == null) {
-            useDefGetConfigObject = true;
-        } else if(!Array.isArray(rawConfigsOrImplementingGetConfigObject)) {
-            // specific implementingGetConfigObject is passed:
-            this.#implementingGetConfigObject = rawConfigsOrImplementingGetConfigObject;
-        } else {
+
+        if (Array.isArray(rawConfigsOrImplementingGetConfigObject)) {
             // raw configs array is passed:
             rawConfigsToInitialize = rawConfigsOrImplementingGetConfigObject;
-            useDefGetConfigObject = true;
-        }
-
-        if (useDefGetConfigObject) {
-            this.#implementingGetConfigObject = new FromGitHubReader();
+        } else {
+            // specific implementingGetConfigObject is passed:
+            this.#implementingGetConfigObject = rawConfigsOrImplementingGetConfigObject;
         }
 
         this.#configsCache = new Configs(rawConfigsToInitialize);
@@ -53,39 +45,39 @@ class Transliterator {
     }
 
     get config() {
-        return { ...this.#config };
+        return {...this.#config};
     }
 
     transliterate(txt, doNotUseDiacritic) {
-        // todo: const conf = this.#config
+        const cfg = this.#config;
 
         this.#useDiacritics = !doNotUseDiacritic; // TODO: get rid of this field
         const indexToGet = !this.#useDiacritics ? 1 : 0;
 
         let lat = txt;
 
-        if (this.#config.useLocationInWordAlgo) {
+        if (cfg.useLocationInWordAlgo) {
             lat = this.#markStartingPositions(lat);
         }
 
         lat = this.#replaceAllByDict(lat,
-            this.#config.beforeStartDict,
-            this.#config.useLocationInWordAlgo);
+            cfg.beforeStartDict,
+            cfg.useLocationInWordAlgo);
 
         const tempApo = '⟨≀⟩';
-        const apostrophesStr = Object.keys(this.#config.apostrophesSingleKeyDict)[0];
+        const apostrophesStr = Object.keys(cfg.apostrophesSingleKeyDict)[0];
         for (const apo of apostrophesStr.split('')) {
             lat = lat.replaceAll(apo, tempApo); // To not mix real apostophes with softing ones which possibly will be added on the next step
         }
 
-        for (const [softingVow, softingVowVals] of Object.entries(this.#config.softingVowelsMultiDict)) {
-            for (const unsoftableCon of this.#config.unsoftableConsonants) {
-                const softedVowVals = /*this.#config.affectVowelNotConsonantWhenSofting
+        for (const [softingVow, softingVowVals] of Object.entries(cfg.softingVowelsMultiDict)) {
+            for (const unsoftableCon of cfg.unsoftableConsonants) {
+                const softedVowVals = /*cfg.affectVowelNotConsonantWhenSofting
                     ? softingVowVals[Config.AFFECTING]
                     : */
                     softingVowVals[Config.AFFECTED]; // when con is unsoftable, vow is forcibly soften
 
-                if (this.#config.useLocationInWordAlgo && Array.isArray(softedVowVals[indexToGet])) {
+                if (cfg.useLocationInWordAlgo && Array.isArray(softedVowVals[indexToGet])) {
                     const softedVowValLocated = Transliterator.#getPositionalValue(softedVowVals[indexToGet], 2);
                     lat = lat.replaceAll(
                         unsoftableCon + softingVow + this.#WORD_END,
@@ -102,14 +94,14 @@ class Transliterator {
                 );
             }
 
-            for (const [conToSoften, softedConVals] of Object.entries(this.#config.softableConsonantsDict)) {
+            for (const [conToSoften, softedConVals] of Object.entries(cfg.softableConsonantsDict)) {
                 // TODO: consider useLocationInWordAlgo
 
-                const conAfterSoftening = this.#config.affectVowelNotConsonantWhenSofting
+                const conAfterSoftening = cfg.affectVowelNotConsonantWhenSofting
                     ? conToSoften
                     : Transliterator.#getPositionalValue(softedConVals[indexToGet]);
 
-                if (this.#config.useLocationInWordAlgo && Array.isArray(softingVowVals[Config.AFFECTING][indexToGet])) {
+                if (cfg.useLocationInWordAlgo && Array.isArray(softingVowVals[Config.AFFECTING][indexToGet])) {
                     const vowAfterSofteningLocated = Transliterator.#getPositionalValue(softingVowVals[Config.AFFECTING][indexToGet], 2);
                     lat = lat.replaceAll(
                         conToSoften + softingVow + this.#WORD_END,
@@ -126,8 +118,8 @@ class Transliterator {
             }
         }
 
-        for (const [softingSign, softingSignSubDict] of Object.entries(this.#config.softingSignsMultiDict)) {
-            for (const unsoftableCon of this.#config.unsoftableConsonants) {
+        for (const [softingSign, softingSignSubDict] of Object.entries(cfg.softingSignsMultiDict)) {
+            for (const unsoftableCon of cfg.unsoftableConsonants) {
                 // TODO: think (and see prev. sample if needed)
                 // TODO: consider useLocationInWordAlgo!!!
                 lat = lat.replaceAll(
@@ -136,12 +128,12 @@ class Transliterator {
                 );
             }
 
-            for (const [conToSoften, softedConVals] of Object.entries(this.#config.softableConsonantsDict)) {
+            for (const [conToSoften, softedConVals] of Object.entries(cfg.softableConsonantsDict)) {
                 // TODO: consider useLocationInWordAlgo, recheck
 
                 const conAfterSoftening = Transliterator.#getPositionalValue(softedConVals[indexToGet]);
 
-                if (this.#config.useLocationInWordAlgo && Array.isArray(softingSignSubDict[Config.AFFECTING][indexToGet])) {
+                if (cfg.useLocationInWordAlgo && Array.isArray(softingSignSubDict[Config.AFFECTING][indexToGet])) {
                     const softingSignAfterSofteningLocated = Transliterator.#getPositionalValue(softingSignSubDict[Config.AFFECTING][indexToGet], 2);
                     lat = lat.replaceAll(
                         conToSoften + softingSign + this.#WORD_END,
@@ -160,33 +152,33 @@ class Transliterator {
             lat = lat.replaceAll(softingSign, softingSignSubDict[Config.AFFECTED][indexToGet]); // if softing sign is used unexpectedly
         }
 
-        lat = lat.replaceAll(tempApo, this.#config.apostrophesSingleKeyDict[apostrophesStr]); // Replace apostrophes
+        lat = lat.replaceAll(tempApo, cfg.apostrophesSingleKeyDict[apostrophesStr]); // Replace apostrophes
 
-        lat = this.#replaceAllByDict(lat, this.#config.dict, this.#config.useLocationInWordAlgo); // todo check last params inside the method instead passing
-        lat = this.#replaceAllByDict(lat, this.#config.otherLanguagesLettersDict, this.#config.useLocationInWordAlgo);
-        lat = this.#replaceAllByDict(lat, this.#config.specSymbolsDict, this.#config.useLocationInWordAlgo);
+        lat = this.#replaceAllByDict(lat, cfg.dict, cfg.useLocationInWordAlgo); // todo check last params inside the method instead passing
+        lat = this.#replaceAllByDict(lat, cfg.otherLanguagesLettersDict, cfg.useLocationInWordAlgo);
+        lat = this.#replaceAllByDict(lat, cfg.specSymbolsDict, cfg.useLocationInWordAlgo);
 
-        if (this.#config.useLocationInWordAlgo) {
+        if (cfg.useLocationInWordAlgo) {
             lat = lat.replaceAll(this.#WORD_START, '');
             lat = lat.replaceAll(this.#WORD_END, '');
         }
 
         lat = this.#detectAndFixCapsLocked(lat);
 
-        lat = this.#replaceAllByDict(lat, this.#config.afterFinishDict, this.#config.useLocationInWordAlgo);
+        lat = this.#replaceAllByDict(lat, cfg.afterFinishDict, cfg.useLocationInWordAlgo);
 
-        if (this.#config.substitutionForUndefinedResult != null) {
-            lat = lat.replaceAll('undefined', this.#config.substitutionForUndefinedResult);
+        if (cfg.substitutionForUndefinedResult != null) {
+            lat = lat.replaceAll('undefined', cfg.substitutionForUndefinedResult);
         }
 
         return lat;
     }
 
     useConfig(cfgCode) {
-        if (this.#config.code === cfgCode) { 
-            return; 
+        if (this.#config.code === cfgCode) {
+            return;
         }
-        
+
         if (!this.#configsCache.hasConfig(cfgCode)) {
             const cfg = this.#implementingGetConfigObject.getConfigObject(cfgCode);
             this.#configsCache.upsertConfig(cfg);
@@ -198,14 +190,16 @@ class Transliterator {
     // TODO: kind of CONFIG functionality part
     // TODO: it DOES NEED refactoring!
     getConfigTransliterationInfo(ignorePositionalCases, ignoreSofteningCases) {
+        const cfg = this.#config;
+
         const result = {};
-        const sourceAlphabet = this.getSourceAlphabet(false, false);
+        const sourceAlphabet = cfg.getSourceAlphabet(false, false);
         const indexToGet = !this.#useDiacritics ? 1 : 0;
 
-        const softableUpperCon = Object.keys(this.#config.softableConsonantsDict).find(v => v.toLocaleUpperCase() === v);
-        const softableLowerCon = Object.keys(this.#config.softableConsonantsDict).find(v => v.toLocaleLowerCase() === v);
-        const unsoftableUpperCon = this.#config.unsoftableConsonants.find(v => v.toLocaleUpperCase() === v);
-        const unsoftableLowerCon = this.#config.unsoftableConsonants.find(v => v.toLocaleLowerCase() === v);
+        const softableUpperCon = Object.keys(cfg.softableConsonantsDict).find(v => v.toLocaleUpperCase() === v);
+        const softableLowerCon = Object.keys(cfg.softableConsonantsDict).find(v => v.toLocaleLowerCase() === v);
+        const unsoftableUpperCon = cfg.unsoftableConsonants.find(v => v.toLocaleUpperCase() === v);
+        const unsoftableLowerCon = cfg.unsoftableConsonants.find(v => v.toLocaleLowerCase() === v);
 
         let softableUpperConTransed;
         let softableLowerConTransed;
@@ -213,8 +207,8 @@ class Transliterator {
         let unsoftableLowerConTransed;
 
         if (softableUpperCon != null && softableLowerCon != null) {
-            softableUpperConTransed = Transliterator.#getPositionalValue(this.#config.softableConsonantsDict[softableUpperCon][indexToGet], 2);
-            softableLowerConTransed = Transliterator.#getPositionalValue(this.#config.softableConsonantsDict[softableLowerCon][indexToGet], 2);
+            softableUpperConTransed = Transliterator.#getPositionalValue(cfg.softableConsonantsDict[softableUpperCon][indexToGet], 2);
+            softableLowerConTransed = Transliterator.#getPositionalValue(cfg.softableConsonantsDict[softableLowerCon][indexToGet], 2);
         }
         if (unsoftableUpperCon != null && unsoftableLowerCon != null) {
             unsoftableUpperConTransed = this.transliterate(unsoftableUpperCon);
@@ -222,14 +216,14 @@ class Transliterator {
         }
 
         // TODO: make using the same upperCase function with the same args everywhere (better to create a method)
-        const upperSoftingSign = Object.keys(this.#config.softingSignsMultiDict).find(v => v.toLocaleUpperCase() === v);
-        const lowerSoftingSign = Object.keys(this.#config.softingSignsMultiDict).find(v => v.toLocaleLowerCase() === v);
+        const upperSoftingSign = Object.keys(cfg.softingSignsMultiDict).find(v => v.toLocaleUpperCase() === v);
+        const lowerSoftingSign = Object.keys(cfg.softingSignsMultiDict).find(v => v.toLocaleLowerCase() === v);
         let affectingUpperSoftingSignTransed;
         let affectingLowerSoftingSignTransed;
 
         if (upperSoftingSign != null && lowerSoftingSign != null) {
-            affectingUpperSoftingSignTransed = Transliterator.#getPositionalValue(this.#config.softingSignsMultiDict[upperSoftingSign][Config.AFFECTING][indexToGet], 2);
-            affectingLowerSoftingSignTransed = Transliterator.#getPositionalValue(this.#config.softingSignsMultiDict[lowerSoftingSign][Config.AFFECTING][indexToGet], 2);
+            affectingUpperSoftingSignTransed = Transliterator.#getPositionalValue(cfg.softingSignsMultiDict[upperSoftingSign][Config.AFFECTING][indexToGet], 2);
+            affectingLowerSoftingSignTransed = Transliterator.#getPositionalValue(cfg.softingSignsMultiDict[lowerSoftingSign][Config.AFFECTING][indexToGet], 2);
         }
 
         const srcVowels = this.#getSourceVowels(true);
@@ -239,7 +233,7 @@ class Transliterator {
             const lower = sourceAlphabet[lwr];
             const currResults = [];
 
-            if (Object.keys(this.#config.softingSignsMultiDict).includes(upper)) {
+            if (Object.keys(cfg.softingSignsMultiDict).includes(upper)) {
                 const softableRes = this.transliterate(softableUpperCon + upper)
                     + ' '
                     + this.transliterate(softableLowerCon + lower);
@@ -289,7 +283,7 @@ class Transliterator {
                                 .replaceAll(that.transliterate(unsoftableLowerCon), '');
                         };
 
-                        if (this.#config.affectVowelNotConsonantWhenSofting && softableUpperCon != null && softableLowerCon != null) {
+                        if (cfg.affectVowelNotConsonantWhenSofting && softableUpperCon != null && softableLowerCon != null) {
 
                             const sRes = this.transliterate(softableLowerCon + lower);
                             const softableRes = sRes + ' ' + sRes;
@@ -305,7 +299,7 @@ class Transliterator {
                             const toPush = removeSofteningLetters(unsoftableRes);
                             currResults.push(toPush);
                         }
-                    } else if (Object.keys(this.#config.softableConsonantsDict).includes(upper)) {
+                    } else if (Object.keys(cfg.softableConsonantsDict).includes(upper)) {
                         if (upperSoftingSign != null && lowerSoftingSign != null) {
                             const softedRes = this.transliterate(upper + upperSoftingSign)
                                 + ' '
@@ -347,8 +341,8 @@ class Transliterator {
 
             result[upper + ' ' + lower] = currResults
                 .filter((v, i, s) => s
-                    .map(m => last(m.split(' ')).toLocaleUpperCase())
-                    .indexOf(last(v.split(' ')).toLocaleUpperCase())
+                        .map(m => last(m.split(' ')).toLocaleUpperCase())
+                        .indexOf(last(v.split(' ')).toLocaleUpperCase())
                     === i) // only with unique latest value (case insens.)
                 .map(v => (v.length && v.match(/\S.*/) != null) ? v : '—') // if whitespaced or empty - replace with '—'
                 .map(v => transformIfNeeded(v))
@@ -366,103 +360,80 @@ class Transliterator {
         return result;
     }
 
-    // TODO: CONFIG functionality part
-    getSourceAlphabet(getOnlyLower, includeOtherLangLetters) {
-        const letterHeap = this.#config.unsoftableConsonants
-            .concat(Object.keys(this.#config.softingSignsMultiDict))
-            .concat(Object.keys(this.#config.dict))
-            .concat(Object.keys(this.#config.softableConsonantsDict))
-            .concat(Object.keys(this.#config.softingVowelsMultiDict))
-            .concat(Object.keys(this.#config.beforeStartDict))
-            .concat(includeOtherLangLetters ? Object.keys(this.#config.otherLanguagesLettersDict) : []);
-
-        const letters = [];
-        for (const el of letterHeap) {
-            let len = el.length;
-
-            if (len === 1) {
-                letters.push(getOnlyLower ? el.toLowerCase() : el);
-                continue;
-            }
-
-            // add each letter separately:
-            if (len > 1) {
-                while (len--) {
-                    letters.push(getOnlyLower
-                        ? el.charAt(len).toLowerCase()
-                        : el.charAt(len));
-                }
-            }
-        }
-
-        return letters
-            .filter((v, i, s) => s.indexOf(v) === i) // get unique
-            .filter(v => !includeOtherLangLetters // get rid of other languages' letters (if needed)
-                ? !Object.keys(this.#config.otherLanguagesLettersDict).includes(v)
-                : true)
-            .sort(Transliterator.#alphabetOrderComparator);
+    // TODO: temporary; rewrite tests and get rid of it.
+    getConfigSourceAlphabet(getOnlyLower, includeOtherLangLettersTransliteration) {
+        return this.#config.getSourceAlphabet(getOnlyLower, includeOtherLangLettersTransliteration);
     }
 
-    // TODO: CONFIG functionality part
+    // TODO: looks like CONFIG functionality part (but it uses transliterate!!!!)
     // TODO: think how include substitutional letters regardless of includeOtherLangLettersTransliteration!!
+    /**
+     * Returns unique sorted letters of the transliterated config's source alphabet.
+     *
+     * @param {boolean} getOnlyLower - Whether to return only lowercase letters.
+     * @param {boolean} includeOtherLangLettersTransliteration - Whether to include transliteration for other language letters.
+     * @returns {string[]} An array of unique sorted letters.
+     */
     getTransliteratedAlphabet(getOnlyLower, includeOtherLangLettersTransliteration) {
-        const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
-        let letterHeap = [...Helpers.flatValuesAt(this.#config.beforeStartDict, dontUseDiacritics).map(val =>
-            this.transliterate(val))]; // TODO: refactor others places to use map(), filter() and others
+        const cfg = this.#config;
 
-        const valsToRunThruAfterFinishDict = Helpers.flatValuesAt(this.#config.dict, dontUseDiacritics)
-            .concat(Helpers.flatValuesAt(this.#config.apostrophesSingleKeyDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(this.#config.softableConsonantsDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(this.#config.softingVowelsMultiDict, dontUseDiacritics))
-            .concat(Helpers.flatValuesAt(this.#config.softingSignsMultiDict, dontUseDiacritics))
-            .concat(includeOtherLangLettersTransliteration ? Helpers.flatValuesAt(this.#config.otherLanguagesLettersDict, dontUseDiacritics) : []);
+        const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
+        let letterHeap = [...Helpers.flatValuesAt(cfg.beforeStartDict, dontUseDiacritics)
+            .map(val => this.transliterate(val))]; // TODO: refactor others places to use map(), filter() and others
+
+        const valsToRunThruAfterFinishDict = [
+            ...Helpers.flatValuesAt(cfg.dict, dontUseDiacritics),
+            ...Helpers.flatValuesAt(cfg.apostrophesSingleKeyDict, dontUseDiacritics),
+            ...Helpers.flatValuesAt(cfg.softableConsonantsDict, dontUseDiacritics),
+            ...Helpers.flatValuesAt(cfg.softingVowelsMultiDict, dontUseDiacritics),
+            ...Helpers.flatValuesAt(cfg.softingSignsMultiDict, dontUseDiacritics),
+            ...(includeOtherLangLettersTransliteration
+                ? Helpers.flatValuesAt(cfg.otherLanguagesLettersDict, dontUseDiacritics)
+                : [])
+        ];
 
         for (const val of valsToRunThruAfterFinishDict) {
-            if (val == null) { // it shouldn't happen
-                continue;
+            if (val == null) {
+                continue; // should never happen (but happens – TODO: investigate)
             }
 
-            let res = val;
-            for (const [afterKey, afterVal] of Object.entries(this.#config.afterFinishDict)) {
-                res = res.replaceAll(afterKey, afterVal); // TODO: consider positionInWordAlgo in afterFinishDict
-            }
+            let res = [...Object.entries(cfg.afterFinishDict)]
+                // TODO: consider positionInWordAlgo in afterFinishDict:
+                .reduce((accumulated, [afterKey, afterVal]) => accumulated.replaceAll(afterKey, afterVal), val);
             letterHeap.push(res);
         }
-        
-        letterHeap = letterHeap.concat(Helpers.flatValuesAt(this.#config.afterFinishDict, dontUseDiacritics));
 
-        const letters = [];
-        for (const el of letterHeap) {
-            if (el == null) { // it shouldn't happen
-                continue;
+        letterHeap.push(...Helpers.flatValuesAt(cfg.afterFinishDict, dontUseDiacritics));
+
+        const letters = letterHeap.reduce((accumulated, el) => {
+            if (el == null) {
+                return accumulated; // should never happen
             }
 
             let len = Helpers.toDiacriticless(el).length;
 
-            if (len === 1) {
-                if (!getOnlyLower || el === el.toLowerCase()) {
-                    letters.push(el);
-                }
-                continue;
+            if (len === 1 && (!getOnlyLower || el === el.toLowerCase())) {
+                return [...accumulated, el];
             }
 
             // add each letter separately:
             if (len > 1) {
                 while (len--) {
-                    letters.push(getOnlyLower
-                        ? el.charAt(len).toLowerCase()
-                        : el.charAt(len));
+                    accumulated.push(getOnlyLower ? el.charAt(len).toLowerCase() : el.charAt(len));
                 }
             }
-        }
 
-        return letters
-            .filter((v, i, s) => s.indexOf(v) === i)  // get unique
-            .sort(Transliterator.#alphabetOrderComparator);
+            return accumulated;
+        }, []);
+
+        const uniqueLetters = [...new Set(letters)];
+
+        return uniqueLetters
+            .sort(Config.alphabetOrderComparator);
     }
 
     #markStartingPositions(txt) {
-        const letters = this.getSourceAlphabet(false, true)
+        const letters = this.#config.getSourceAlphabet(false, true)
             .concat([Transliterator.#UPPER_TECH_LETER, Transliterator.#LOWER_TECH_LETER])
             .join('');
 
@@ -486,14 +457,14 @@ class Transliterator {
 
         // IssueAFTER or BEFOREIssue (a(1), b(2), c(3) and d(5) groups respectively)
         // TODO q - for apostrophes todo append first OR and other spec symbols
-        const groupIdx = {              
+        const groupIdx = {
             a: 1,
             b: 2,
             c: 3,
             q: 4,
             d: 5
         };
-        
+
         const pattern = /(?<a>\p{Lu}\p{Ll}+)(?<b>\p{Lu}+)|(?<c>\p{Lu}+)(?<q>['"]*)(?<d>\p{Lu}\p{Ll}+)/gu;
         const matches = [...res.matchAll(pattern)];
 
@@ -551,7 +522,7 @@ class Transliterator {
             'Ы', 'ы', 'Э', 'э', 'Ю', 'ю',
             'Я', 'я'
         ];
-        const alphabet = this.getSourceAlphabet(false, includeOtherLangLetters);
+        const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
         return alphabet.filter(l => generalCyrVowels.includes(l));
     }
 
@@ -568,7 +539,7 @@ class Transliterator {
             'џ', 'Ш', 'ш', 'Щ', 'щ'
         ];
 
-        const alphabet = this.getSourceAlphabet(false, includeOtherLangLetters);
+        const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
         return alphabet.filter(l => generalCyrConsonants.includes(l));
 
         /*      this.#config.unsoftableConsonants.concat(Object.keys(this.#config.softableConsonantsDict));
@@ -602,7 +573,7 @@ class Transliterator {
         const generalSpecialSigns = [ // TODO: make lower string
             'Ъ', 'ъ', 'Ь', 'ь', "'", '’',
         ];
-        const alphabet = this.getSourceAlphabet(false, includeOtherLangLetters);
+        const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
         return alphabet.filter(l => generalSpecialSigns.includes(l));
     }
 
@@ -617,43 +588,9 @@ class Transliterator {
                 : from[from.length - 1])
             : from;
     }
-
-    static #alphabetOrderComparator(a, b) {
-        const shouldBeLast = '\'’*';
-        let signChanger = 1;
-
-        if (shouldBeLast.includes(a) && !shouldBeLast.includes(b) ||
-            shouldBeLast.includes(b) && !shouldBeLast.includes(a)) {
-            signChanger = -1;
-        }
-
-        const specialGroupOrders = [
-            'AaȦȧÄä',
-            'EeĖėËë',
-            'IıİiÏï',
-            'OoȮȯÖö',
-            'UuU̇u̇Üü',
-            'YyẎẏŸÿ'
-        ];
-
-        for (const group of specialGroupOrders) {
-            if (group.includes(a) || group.includes(b)) {
-                if (group.includes(a) && group.includes(b)) {
-                    return group.indexOf(a).toString()
-                        .localeCompare(group.indexOf(b).toString());
-                } else if (group.includes(a)) {
-                    a = group[0];
-                    break;
-                } else {
-                    b = group[0];
-                    break;
-                }
-            }
-        }
-
-        return signChanger * a.localeCompare(b, 'uk', { caseFirst: 'upper' });
-    }
 }
 
 // If it's Node.js:
-if (typeof window === 'undefined') { module.exports = Transliterator; }
+if (typeof window === 'undefined') {
+    module.exports = Transliterator;
+}

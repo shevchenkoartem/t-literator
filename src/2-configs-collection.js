@@ -19,7 +19,7 @@ class ConfigsCollection {
             && Object.getPrototypeOf(this.#configs) === Object.prototype;
     }
 
-    get configCodes(){
+    get configCodes() {
         return Object.keys(this.#configs);
     }
 
@@ -69,4 +69,6 @@ class ConfigsCollection {
 }
 
 // If it's Node.js:
-if (typeof window === 'undefined') { module.exports = ConfigsCollection; }
+if (typeof window === 'undefined') {
+    module.exports = ConfigsCollection;
+}

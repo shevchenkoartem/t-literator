@@ -31,4 +31,6 @@ class DefaultConfigReaderFromGitHub {
 }
 
 // If it's Node.js:
-if (typeof window === 'undefined') { module.exports = DefaultConfigReaderFromGitHub; }
+if (typeof window === 'undefined') {
+    module.exports = DefaultConfigReaderFromGitHub;
+}

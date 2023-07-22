@@ -97,4 +97,6 @@ class StringValueOrArrayHelpers {
 }
 
 // If it's Node.js:
-if (typeof window === 'undefined') { module.exports = StringValueOrArrayHelpers; }
+if (typeof window === 'undefined') {
+    module.exports = StringValueOrArrayHelpers;
+}
