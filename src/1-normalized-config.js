@@ -169,6 +169,7 @@ class NormalizedConfig {
     }
 
     // TODO: would be nice to make it private when it's possible:
+    // TODO: PROFILER: often used
     /**
      * A custom comparator for sorting letters in a specific order.
      * Certain characters are given higher priority than others.
@@ -215,6 +216,7 @@ class NormalizedConfig {
 
     // TODO /* test, rethink collections */  // TODO прочистити від шлаку
     // TODO: тут чи повернути в транслітератор?
+    // TODO: PROFILER: heavy usage: 38 ticks
     getDigraphs() {
         const cfg = this.#config;
         const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
