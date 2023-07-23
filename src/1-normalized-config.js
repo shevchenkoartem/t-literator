@@ -3,124 +3,133 @@ const Hlprs = typeof window === 'undefined'
     : /* browser */ StringValueOrArrayHelpers;
 
 // A wrapper over a raw config
+// TODO: expose outside unordered maps and sets, not objects and arrays
 class NormalizedConfig {
-    // todo: think how to make private:
-    static AFFECTING = 'affecting';
-    static AFFECTED = 'affected';
+    static #AFFECTING = 'affecting';
+    static #AFFECTED = 'affected';
+    static get AFFECTING() { // get-only for outside
+        return this.#AFFECTING;
+    }
+    static get AFFECTED() { // get-only for outside
+        return this.#AFFECTED;
+    }
 
-    #config = null; // todo: rename to wrappee?
+    static #UNSUPPORTED_NON_DIACRITIC_VALUES_MSG = "Previously supported non-diacritic values are deprecated";
 
+    #wrappedConfig = null; // rename to wrappedConfigMap?
     #cache = {};
 
     constructor(rawConfig) {
-        this.#config = {...rawConfig};
+        this.#wrappedConfig = {...rawConfig};
         this.#ensureNormalized();
     }
 
     get #configCopy() {
-        return {...this.#config};
+        return {...this.#wrappedConfig};
     }
 
     // TODO: think what to leave private:
-    // TODO: make unmutual using configCopy?
+    // TODO: make not mutual by using configCopy?
     // TODO: use Proxy - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
     get code() {
-        return this.#config.code;
+        return this.#wrappedConfig.code;
     }
 
     get name() {
-        return this.#config.name;
+        return this.#wrappedConfig.name;
     }
 
     get desc() {
-        return this.#config.desc;
+        return this.#wrappedConfig.desc;
     }
 
     get link() {
-        return this.#config.link;
+        return this.#wrappedConfig.link;
     }
 
+     // from language
     get from() {
-        return this.#config.from;
+        return this.#wrappedConfig.from;
     }
 
+     // to language
     get to() {
-        return this.#config.to;
+        return this.#wrappedConfig.to;
     }
 
     get year() {
-        return this.#config.year;
+        return this.#wrappedConfig.year;
     }
 
     get useLocationInWordAlgo() {
-        return this.#config.useLocationInWordAlgo;
+        return this.#wrappedConfig.useLocationInWordAlgo;
     }
 
     get affectVowelNotConsonantWhenSofting() {
-        return this.#config.affectVowelNotConsonantWhenSofting;
+        return this.#wrappedConfig.affectVowelNotConsonantWhenSofting;
     }
 
     get dict() {
-        return this.#config.dict;
+        return this.#wrappedConfig.dict;
     }
 
     get otherLanguagesLettersDict() {
-        return this.#config.otherLanguagesLettersDict;
+        return this.#wrappedConfig.otherLanguagesLettersDict;
     }
 
     get unsoftableConsonants() {
-        return this.#config.unsoftableConsonants;
+        return this.#wrappedConfig.unsoftableConsonants;
     }
 
     get softableConsonantsDict() {
-        return this.#config.softableConsonantsDict;
+        return this.#wrappedConfig.softableConsonantsDict;
     }
 
     get softingVowelsMultiDict() {
-        return this.#config.softingVowelsMultiDict;
+        return this.#wrappedConfig.softingVowelsMultiDict;
     }
 
     get softingSignsMultiDict() {
-        return this.#config.softingSignsMultiDict;
+        return this.#wrappedConfig.softingSignsMultiDict;
     }
 
     get apostrophesSingleKeyDict() {
-        return this.#config.apostrophesSingleKeyDict;
+        return this.#wrappedConfig.apostrophesSingleKeyDict;
     }
 
     get exceptionalCaseRules() {
-        return this.#config.exceptionalCaseRules;
+        return this.#wrappedConfig.exceptionalCaseRules;
     }
 
     get specSymbolsDict() {
-        return this.#config.specSymbolsDict;
+        return this.#wrappedConfig.specSymbolsDict;
     }
 
     get substitutionForErrors() {
-        return this.#config.substitutionForErrors;
+        return this.#wrappedConfig.substitutionForErrors;
     }
 
     get beforeStartDict() {
-        return this.#config.beforeStartDict;
+        return this.#wrappedConfig.beforeStartDict;
     }
 
     get afterFinishDict() {
-        return this.#config.afterFinishDict;
+        return this.#wrappedConfig.afterFinishDict;
     }
 
     getProperty(propName) {
-        if (!this.#config.hasOwnProperty(propName)) {
+        if (!this.#wrappedConfig.hasOwnProperty(propName)) {
             return undefined;
         }
         return this.#configCopy[propName];
     }
 
     get isEmpty() {
-        return this.#config != null;
+        return this.#wrappedConfig != null;
     }
 
     get isNormalized() {
-        return this.#config.isNormalized;
+        return this.#wrappedConfig.isNormalized;
     }
 
     /**
@@ -140,8 +149,12 @@ class NormalizedConfig {
         return getOnlyLower ? this.#makeLowerAlphabet(alphabet) : alphabet;
     }
 
+    /**
+     * Collects the source alphabet for the language, removing duplicates and sorting in alphabetical order.
+     * Other languages' letters can be included or excluded based on the function argument.
+     */
     #doGetSourceAlphabet(includeOtherLangLetters) {
-        const cfg = this.#config;
+        const cfg = this.#wrappedConfig;
 
         const letterHeap = [
             cfg.unsoftableConsonants,
@@ -153,13 +166,11 @@ class NormalizedConfig {
             ...(includeOtherLangLetters ? Object.keys(cfg.otherLanguagesLettersDict) : [])
         ];
 
-        const letters = letterHeap.flatMap(el => [...el]);
+        const uniqueLetters = [...new Set(letterHeap.flat())];
 
-        const uniqueLetters = [...new Set(letters)];
+        // Filter out other languages' letters if not needed and sort the remaining letters.
         return uniqueLetters
-            .filter(v => !includeOtherLangLetters // get rid of other languages' letters (if needed)
-                ? !cfg.otherLanguagesLettersDict.hasOwnProperty(v)
-                : true)
+            .filter(letter => includeOtherLangLetters || !cfg.otherLanguagesLettersDict.hasOwnProperty(letter))
             .sort(NormalizedConfig.alphabetOrderComparator);
     }
 
@@ -217,7 +228,8 @@ class NormalizedConfig {
      * @returns {string[]} An array of unique digraphs.
      */
     getDigraphs() {
-        const cfg = this.#config;
+        // TODO: do caching as in getSourceAlphabet()
+        const cfg = this.#wrappedConfig;
         const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
 
         const dictsToGetFrom = [
@@ -241,15 +253,20 @@ class NormalizedConfig {
     }
 
 
+    /**
+     * Ensures the config is normalized according to specific rules.
+     * This involves assigning default values to the config's properties if they have not been initialized.
+     * Furthermore, it adjusts case inconsistencies in certain collections by adding their upper and title cased versions.
+     * Once all transformations are complete, the `isNormalized` property of the config is set to true.
+     */
     #ensureNormalized() {
-        const cfg = this.#config;
-        const useDiacritics = true; // this.#useDiacritics todo: get rid of #useDiacritics!
+        const cfg = this.#wrappedConfig;
 
         if (cfg.isNormalized) {
             return;
         }
 
-        cfg.code = cfg.code ?? 'code' + Math.floor(Math.random() * 1000); // TODO: use hash instead of random!!!!!
+        cfg.code = cfg.code ?? 'code' + Math.floor(Math.random() * 1000); // TODO: use hash instead of random?
         cfg.name = cfg.name ?? 'Unnamed';
         cfg.desc = cfg.desc ?? '';
         cfg.link = cfg.link ?? '';
@@ -259,32 +276,34 @@ class NormalizedConfig {
         ///cfg.year = cfg.year ?? -1;
         ////cfg.substitutionForErrors = cfg.substitutionForErrors ?? '';
 
-        cfg.affectVowelNotConsonantWhenSofting =
-            cfg.affectVowelNotConsonantWhenSofting ?? false;
+        cfg.affectVowelNotConsonantWhenSofting = cfg.affectVowelNotConsonantWhenSofting ?? false;
         cfg.useLocationInWordAlgo = cfg.useLocationInWordAlgo ?? false;
 
         // arrs:
         cfg.unsoftableConsonants = cfg.unsoftableConsonants ?? [];
+
         // dicts:
-        cfg.softableConsonantsDict = NormalizedConfig.#getNormalizedDictStructure(cfg.softableConsonantsDict);
-        cfg.dict = NormalizedConfig.#getNormalizedDictStructure(cfg.dict);
-        cfg.otherLanguagesLettersDict = NormalizedConfig.#getNormalizedDictStructure(cfg.otherLanguagesLettersDict);
-        cfg.specSymbolsDict = NormalizedConfig.#getNormalizedDictStructure(cfg.specSymbolsDict);
-        cfg.beforeStartDict = NormalizedConfig.#getNormalizedDictStructure(cfg.beforeStartDict);
-        cfg.afterFinishDict = NormalizedConfig.#getNormalizedDictStructure(cfg.afterFinishDict);
-        // multidicts:
-        cfg.softingSignsMultiDict = NormalizedConfig.#getNormalizedMultiDictStructure(cfg.softingSignsMultiDict);
-        cfg.softingVowelsMultiDict = NormalizedConfig.#getNormalizedMultiDictStructure(cfg.softingVowelsMultiDict);
+        const normalizeDict = NormalizedConfig.#getNormalizedDictStructure;
+        cfg.softableConsonantsDict = normalizeDict(cfg.softableConsonantsDict);
+        cfg.dict = normalizeDict(cfg.dict);
+        cfg.otherLanguagesLettersDict = normalizeDict(cfg.otherLanguagesLettersDict);
+        cfg.specSymbolsDict = normalizeDict(cfg.specSymbolsDict);
+        cfg.beforeStartDict = normalizeDict(cfg.beforeStartDict);
+        cfg.afterFinishDict = normalizeDict(cfg.afterFinishDict);
+
+        // multi-dictionaries:
+        const normalizeMultiDict = NormalizedConfig.#getNormalizedMultiDictStructure;
+        cfg.softingSignsMultiDict = normalizeMultiDict(cfg.softingSignsMultiDict);
+        cfg.softingVowelsMultiDict = normalizeMultiDict(cfg.softingVowelsMultiDict);
+
         // single key dicts:
         this.#normalizeApostrophesSingleKeyDict();
 
-        // beforeStartDict uses it's own rules:
+        // beforeStartDict uses its own rules:
         NormalizedConfig.#completeByUpperAndTitleCased(cfg.beforeStartDict);
-        if (!useDiacritics) {
-            NormalizedConfig.#completeByNonDiacritics(cfg.beforeStartDict, true);
-        }
 
-        const cols = [
+        // Complete upper and title cases for the following collections:
+        const collections = [
             // arrs:
             cfg.unsoftableConsonants,
 
@@ -299,36 +318,42 @@ class NormalizedConfig {
             cfg.afterFinishDict
         ];
 
-        for (const col of cols) {
-            NormalizedConfig.#completeByUpperAndTitleCased(col);
-
-            if (!useDiacritics) {
-                NormalizedConfig.#completeByNonDiacritics(col);
-            }
+        for (const collection of collections) {
+            NormalizedConfig.#completeByUpperAndTitleCased(collection);
         }
 
         cfg.isNormalized = true;
     }
 
+    /**
+     * Ensures that the `apostrophesSingleKeyDict` property of the config has only one key.
+     * If the dictionary is null or has no keys, it is initialized with an empty string key/value pair.
+     * If there are multiple keys, it keeps the first one and removes the rest.
+     */
     #normalizeApostrophesSingleKeyDict() {
-        const cfg = this.#config;
-        let keys;
-        if (cfg.apostrophesSingleKeyDict != null) {
-            keys = Object.keys(cfg.apostrophesSingleKeyDict);
+        const cfg = this.#wrappedConfig;
+
+        if (cfg.apostrophesSingleKeyDict == null) {
+            cfg.apostrophesSingleKeyDict = {"": ""};
+            return;
         }
 
-        if (keys == null || !keys.length) {
+        const keys = Object.keys(cfg.apostrophesSingleKeyDict);
+
+        if (!keys.length) {
             cfg.apostrophesSingleKeyDict = {"": ""};
-        } else {
-            let i = 0;
-            // ensure dict has a single key:
-            keys.forEach((key) =>
-                i++ === 0 || delete cfg.apostrophesSingleKeyDict[key]);
+            return;
+        }
+
+        // ensure dict has a single key:
+        for (let i = 1; i < keys.length; i++) {
+            delete cfg.apostrophesSingleKeyDict[keys[i]];
         }
     }
 
-    // Makes dict structure normalized to common rules. E.g. "а": "a" becomes "а": [ "a" ]
-    // (because each dict value should be array of [0] = diacritic and (optionally) [1] = non-diacritic value) 
+    /**
+     * Makes dict structure normalized to common rules.
+     */
     static #getNormalizedDictStructure(dict) {
         const res = {};
 
@@ -336,28 +361,42 @@ class NormalizedConfig {
             return res;
         }
 
-        // TODO: refactor using const (key, value):
-        for (const key of Object.keys(dict)) {
-            const isValue = !Array.isArray(dict[key]);
-            const isEmptyArray = Array.isArray(dict[key]) && dict[key].length === 0;
-            const isArrayWith3Elems = Array.isArray(dict[key]) && dict[key].length === 3;
+        for (const [key, value] of Object.entries(dict)) {
+            const isArray = Array.isArray(value);
+            const isValue = typeof value === 'string';
+            const isArrayWith3Elems = isArray && value.length === 3; // pre-mid-post placing array
 
             if (isValue || isArrayWith3Elems) {
-                res[key] = [dict[key]]; // value or pre-mid-post placing array was set in short diacritic-only form
+                res[key] = value;
                 continue;
             }
 
-            if (isEmptyArray) {
-                res[key] = [""]; // should not happen
-                continue;
+            if (isArray) {
+                if (value.length === 1) {
+                    res[key] = value[0]; // should never happen
+                    continue;
+                }
+
+                if (value.length === 0) {
+                    res[key] = ""; // should never happen
+                    continue;
+                }
+
+                if (value.length === 2) {
+                    // E.g., "я": [ "à", "ya" ]
+                    throw new Error(`Unsupported dict value type: ${value}. ${(this.#UNSUPPORTED_NON_DIACRITIC_VALUES_MSG)}.`);
+                }
             }
 
-            res[key] = dict[key];  // Already OK. E.g., "а": [ "a" ] or "я": [ "à", "ya" ]
+            throw new Error(`Unsupported dict value type: ${value}`)
         }
 
         return res;
     }
 
+    /**
+     * Normalizes multiDict structure ensuring each value is a softening affection dict.
+     */
     static #getNormalizedMultiDictStructure(multiDict) {
         const res = {};
 
@@ -365,101 +404,76 @@ class NormalizedConfig {
             return res;
         }
 
-        // TODO: use [key, value]
-        for (const key of Object.keys(multiDict)) {
-            if (multiDict[key].constructor !== Object) {
-                const valOrArr = multiDict[key];
+        for (const [key, value] of Object.entries(multiDict)) {
+            if (typeof value === 'string') {
+                const valOrArr = value;
                 const affectionDict = {};
-                affectionDict[NormalizedConfig.AFFECTED] = valOrArr;
-                affectionDict[NormalizedConfig.AFFECTING] = valOrArr;
+                // let's make affection values the same:
+                affectionDict[NormalizedConfig.#AFFECTED] = valOrArr;
+                affectionDict[NormalizedConfig.#AFFECTING] = valOrArr;
 
                 res[key] = NormalizedConfig.#getNormalizedDictStructure(affectionDict);
+            } else if (typeof value === 'object') {
+                // looks like already containing affection keys/values:
+                res[key] = NormalizedConfig.#getNormalizedDictStructure(value);
             } else {
-                res[key] = NormalizedConfig.#getNormalizedDictStructure(multiDict[key]);
+                // array?
+                throw new Error(`Unsupported multiDict value type: ${value}. ${(this.#UNSUPPORTED_NON_DIACRITIC_VALUES_MSG)}.`);
             }
         }
 
         return res;
     }
 
-    /// If the second (non-diacritics) value/array in the dictOfArrs
-    /// hasn't been set – let's copy it without diacritics.
-    static #completeByNonDiacritics(/*[ref]*/dictOfArrsOrMulti, doNotForce) { // TODO: use last arg level upper
-        if (dictOfArrsOrMulti.constructor !== Object) {
-            return;
-        }
-
-        for (const arrOrAffectionDict of Object.values(dictOfArrsOrMulti)) {
-            if (arrOrAffectionDict.constructor === Object) {
-                // affection dict, use recursive call:
-                NormalizedConfig.#completeByNonDiacritics(arrOrAffectionDict);
-                continue;
-            }
-
-            if (!arrOrAffectionDict.length) {
-                continue; // it shouldn't happen
-            }
-
-            if (arrOrAffectionDict.length === 1) {
-                // Copy second one from the first one:
-                arrOrAffectionDict.push(Hlprs.toDiacriticless(arrOrAffectionDict[0]));
-            } else if (!doNotForce) { // arr.length > 1 and forced mode
-                arrOrAffectionDict[1] = Hlprs.toDiacriticless(arrOrAffectionDict[1]); // forced mode: ensure given second value doesn't have diacritics
-            } else {
-                // do nothing;
-            }
-        }
-    }
-
+    /**
+     * Adds upper and title cased values to the dictionary.
+     */
     static #completeByUpperAndTitleCased(/*[ref]*/arrOrDictOrMulti) {
         const toCaseFuncs = [
             Hlprs.toTitleCase,
             Hlprs.toUpperCase
+            // TODO: append by func for 3 letters case (or probably each of possible combinations)
         ];
-        // TODO: append func for 3 letters case (or probably each of possible combinations)
 
-        if (Array.isArray(arrOrDictOrMulti)) {
-            let arrOrDictOrMultiSet = new Set(arrOrDictOrMulti);
-            let toConcatSet = new Set();
+        if (Array.isArray(arrOrDictOrMulti)) { // e.g., [б, в, г]
+            const letterSet = new Set(arrOrDictOrMulti);
+            const toConcatSet = new Set();
 
-            for (const item of arrOrDictOrMultiSet) {
+            for (const letter of letterSet) {
                 for (const toCaseFunc of toCaseFuncs) {
-                    const toPush = toCaseFunc(item);
-                    if (!arrOrDictOrMultiSet.has(toPush)) {
+                    const toPush = toCaseFunc(letter);
+                    if (!letterSet.has(toPush)) {
                         toConcatSet.add(toPush);
                     }
                 }
             }
+            arrOrDictOrMulti.push(...toConcatSet); // becomes e.g., [б, в, г, Б, В, Г]
 
-            arrOrDictOrMulti.push(...toConcatSet);
         } else { // dictionary or multi-dictionary:
             const entries = Object.entries(arrOrDictOrMulti);
-            for (const [lowerKey, lowerArrOrAffectionDict] of entries) {
+            for (const [lowerKey, lowerValOrArrOrAffectionDict] of entries) {
                 for (const toCaseFunc of toCaseFuncs) {
                     const casedKey = toCaseFunc(lowerKey);
-                    if (arrOrDictOrMulti.hasOwnProperty(casedKey)) {
+                    if (casedKey in arrOrDictOrMulti) {
                         continue;
                     }
 
-                    if (Array.isArray(lowerArrOrAffectionDict)) {
-                        const casedArr = [];
-                        for (const valOrArr of lowerArrOrAffectionDict) {
-                            casedArr.push(toCaseFunc(valOrArr));
-                        }
-
-                        arrOrDictOrMulti[casedKey] = casedArr;
+                    if (typeof lowerValOrArrOrAffectionDict === 'string') { // single value like "la"
+                        arrOrDictOrMulti[casedKey] = toCaseFunc(lowerValOrArrOrAffectionDict);
                         continue;
                     }
 
+                    if (Array.isArray(lowerValOrArrOrAffectionDict)) { // pre-mid-post placing array
+                        arrOrDictOrMulti[casedKey] = lowerValOrArrOrAffectionDict.map(toCaseFunc);
+                        continue;
+                    }
+
+                    // affection dict, e.g., { "affected": "ie", "affecting": "ie" }
                     const casedAffectionDict = {};
 
-                    const entries = Object.entries(lowerArrOrAffectionDict);
-                    for (const [affectionKey, affectionLowerArr] of entries) {
-                        const casedArr = [];
-                        for (const valOrArr of affectionLowerArr) {
-                            casedArr.push(toCaseFunc(valOrArr));
-                        }
-                        casedAffectionDict[affectionKey] = casedArr;
+                    const entries = Object.entries(lowerValOrArrOrAffectionDict);
+                    for (const [affectionKey, affectionLowerVal] of entries) {
+                        casedAffectionDict[affectionKey] = toCaseFunc(affectionLowerVal);
                     }
 
                     arrOrDictOrMulti[casedKey] = casedAffectionDict;
