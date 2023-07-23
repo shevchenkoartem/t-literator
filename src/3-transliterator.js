@@ -193,7 +193,7 @@ class Transliterator {
 
     useConfig(cfgCode) {
         if (this.#config.code === cfgCode) {
-            return;
+            return; // already in use
         }
 
         if (!this.#configsCache.hasConfig(cfgCode)) {

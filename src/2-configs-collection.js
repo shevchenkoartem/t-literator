@@ -4,6 +4,7 @@ const NormalizedCfg = typeof window === 'undefined'
 
 class ConfigsCollection {
     #configs = {};
+    #cachedConfigCodes = new Set();
 
     constructor(rawConfigs) {
         if (rawConfigs == null) {
@@ -15,26 +16,19 @@ class ConfigsCollection {
     }
 
     get isEmpty() {
-        let isEmpty = true;
-        // this is an optimization, never mind "'for' statement doesn't loop" warning:
-        for (let key in this.#configs) {
-            isEmpty = false;
-            break;
-        }
-
-        return isEmpty && Object.getPrototypeOf(this.#configs) === Object.prototype;
+        return this.count === 0 && Object.getPrototypeOf(this.#configs) === Object.prototype;
     }
 
     get configCodes() {
-        return Object.keys(this.#configs);
+        return [...this.#cachedConfigCodes];
     }
 
     get count() {
-        return this.configCodes.length;
+        return this.#cachedConfigCodes.size;
     }
 
     hasConfig(configCode) {
-        return !this.isEmpty && configCode in this.#configs; // TODO: choose and use a single approach everywhere: https://stackoverflow.com/questions/1098040/checking-if-a-key-exists-in-a-javascript-object
+        return !this.isEmpty && this.#cachedConfigCodes.has(configCode);
     }
 
     getConfig(configCode) {
@@ -53,24 +47,30 @@ class ConfigsCollection {
     }
 
     upsertConfig(rawConfig) {
-        //todo: check null
-        const res = !this.hasConfig(rawConfig.code);
-        this.#configs[rawConfig.code] = rawConfig; // initially, insert a raw config - for lazyness
+        if (!rawConfig || !rawConfig.code) {
+            //return false; // when addinng this line, the tests fail
+        }
 
-        return res; // if has inserted a new one
+        const res = !this.hasConfig(rawConfig.code);
+        this.#configs[rawConfig.code] = rawConfig; // initially, only insert a raw config - for lazyness
+        this.#cachedConfigCodes.add(rawConfig.code);
+
+        return res; // whether a new one was inserted
     }
 
     deleteConfig(configCode) {
         const res = this.hasConfig(configCode);
         if (res) {
             delete this.#configs[configCode];
+            this.#cachedConfigCodes.delete(configCode);
         }
 
-        return res; // if has deleted
+        return res; // whether it was deleted
     }
 
     deleteAll() {
         this.#configs = {};
+        this.#cachedConfigCodes.clear();
     }
 }
 
