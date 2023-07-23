@@ -90,7 +90,11 @@ class Transliterator {
         // To not mix real apostrophes with softing ones which possibly will be added on the next step
         lat = Transliterator.stringUtils.replaceLettersFromStr(lat, Array.from(apostrophesStr), tempApo);
 
-        for (const [softingVow, softingVowVals] of Object.entries(cfg.softingVowelsMultiDict)) {
+        const softingVowelsMultiDictEntries = Object.entries(cfg.softingVowelsMultiDict);
+        const softableConsonantsDictEntries = Object.entries(cfg.softableConsonantsDict);
+        const softingSignsMultiDictEntries = Object.entries(cfg.softingSignsMultiDict);
+
+        for (const [softingVow, softingVowVals] of softingVowelsMultiDictEntries) {
             for (const unsoftableCon of cfg.unsoftableConsonants) {
                 const softedVowVals = /*cfg.affectVowelNotConsonantWhenSofting
                     ? softingVowVals[Config.AFFECTING]
@@ -114,7 +118,7 @@ class Transliterator {
                 );
             }
 
-            for (const [conToSoften, softedConVals] of Object.entries(cfg.softableConsonantsDict)) {
+            for (const [conToSoften, softedConVals] of softableConsonantsDictEntries) {
                 // TODO: consider useLocationInWordAlgo
 
                 const conAfterSoftening = cfg.affectVowelNotConsonantWhenSofting
@@ -138,7 +142,7 @@ class Transliterator {
             }
         }
 
-        for (const [softingSign, softingSignSubDict] of Object.entries(cfg.softingSignsMultiDict)) {
+        for (const [softingSign, softingSignSubDict] of softingSignsMultiDictEntries) {
             for (const unsoftableCon of cfg.unsoftableConsonants) {
                 // TODO: think (and see prev. sample if needed)
                 // TODO: consider useLocationInWordAlgo!!!
@@ -148,7 +152,7 @@ class Transliterator {
                 );
             }
 
-            for (const [conToSoften, softedConVals] of Object.entries(cfg.softableConsonantsDict)) {
+            for (const [conToSoften, softedConVals] of softableConsonantsDictEntries) {
                 // TODO: consider useLocationInWordAlgo, recheck
 
                 const conAfterSoftening = Transliterator.#getPositionalValue(softedConVals[indexToGet]);
@@ -590,7 +594,8 @@ class Transliterator {
         const indexToGet = !this.#useDiacritics ? 1 : 0;
         let res = src;
 
-        for (const [key, vals] of Object.entries(dict)) {
+        const entries = Object.entries(dict);
+        for (const [key, vals] of entries) {
             const valOrPositionalVals = vals[indexToGet];
 
             if (useLocationInWordAlgo && Array.isArray(valOrPositionalVals)) {
@@ -640,7 +645,8 @@ class Transliterator {
                 const indexToGet = !this.#useDiacritics ? 1 : 0;
                 const resultFromBeforeStartDict = [];
                 for (const con of result) {
-                    for (const [key, vals] of Object.entries(this.#config.beforeStartDict)) {
+                    const entries = Object.entries(this.#config.beforeStartDict);
+                    for (const [key, vals] of entries) {
                         const valOrArr = vals[indexToGet];
 
                         const needToPush = Array.isArray(valOrArr)

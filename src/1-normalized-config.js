@@ -433,7 +433,8 @@ class NormalizedConfig {
 
             arrOrDictOrMulti.push(...toConcatSet);
         } else { // dictionary or multi-dictionary:
-            for (const [lowerKey, lowerArrOrAffectionDict] of Object.entries(arrOrDictOrMulti)) {
+            const entries = Object.entries(arrOrDictOrMulti);
+            for (const [lowerKey, lowerArrOrAffectionDict] of entries) {
                 for (const toCaseFunc of toCaseFuncs) {
                     const casedKey = toCaseFunc(lowerKey);
                     if (arrOrDictOrMulti.hasOwnProperty(casedKey)) {
@@ -452,7 +453,8 @@ class NormalizedConfig {
 
                     const casedAffectionDict = {};
 
-                    for (const [affectionKey, affectionLowerArr] of Object.entries(lowerArrOrAffectionDict)) {
+                    const entries = Object.entries(lowerArrOrAffectionDict);
+                    for (const [affectionKey, affectionLowerArr] of entries) {
                         const casedArr = [];
                         for (const valOrArr of affectionLowerArr) {
                             casedArr.push(toCaseFunc(valOrArr));

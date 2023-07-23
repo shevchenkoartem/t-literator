@@ -51,7 +51,8 @@ class StringValueOrArrayHelpers {
 
         // the arg is a string value:
         let res = valOrArr;
-        for (const [lower, upper] of Object.entries(exceptionalCaseRules ?? {})) {
+        const entries = Object.entries(exceptionalCaseRules ?? {})
+        for (const [lower, upper] of entries) {
             res = res.replaceAll(lower, upper);
         }
         return res.toUpperCase();
