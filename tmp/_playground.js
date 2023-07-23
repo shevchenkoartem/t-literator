@@ -16,7 +16,7 @@ console.log('Current folder: ' + __dirname);
 const Transliterator = require('../src/3-transliterator');
 const FileDataReader = require('../tst/file-data-reader');
 
-const reader = new FileDataReader('/Volumes/DATA/SYNCED/OneDrive/__ ДІЯННЯ/Programming/UkrLat/Latynka/scripts/t-literator-js/');
+const reader = new FileDataReader('..');
 const t = new Transliterator(reader);
 
 const createTestChecksResults = function(config) {
@@ -35,33 +35,48 @@ const createTestChecksResults = function(config) {
 };
 
 let configs = [
-    //'abecadlo',
-    //'jireckivka',
-    // 'heohraf'
-    //'pasport',
-    //'lucukivka',
-    //'pingvinivka',
-    //'naukova-trad'
-    //"ipa",
-    //'bgn-pcgn-65'
-    //'nice-cyr'
+    'abecadlo',
+    'jireckivka',
+    'heohraf',
+    'pasport',
+    'lucukivka',
+    'pingvinivka',
+    'naukova-trad',
+    "ipa",
+    'bgn-pcgn-65',
+    'nice-cyr',
     'temivka',
+    'volapuk-unicode',
+    'volapuk-askii',
     //''
 ];
 
 //configs = Object.keys(reader.getConfigPaths());
 
 
+// save start datetime:
+const start = new Date();
+
 for (const conf of configs) {
     t.useConfig(conf);
-    //console.log(conf);
     console.log(t.getConfigTransliterationInfo());
+    //console.log(t.getTransliteratedAlphabet(false, true));
+
+    //console.log(conf);
     //console.log(t.getSourceConsonants(false));
     //console.log(t.getSourceVowels(false));
     //console.log(t.getSourceSpecialSigns(false));
-    console.log(t.getTransliteratedAlphabet(false, true));
     //console.log(t.getSourceAlphabet(false, true));
-    //console.log(t.transliterate(`ЦІЄЇ СІМ'Ї`));
+
+    let testStr = `ЦІЄЇ СІМ'Ї cьогодні преміально`;
+    console.log(t.transliterate(testStr));
+
+
+    for(i = 0; i < 11; i++) { // спробуй поставити 100 і зрозуміти, чому зависає
+        testStr += testStr;
+        t.useConfig(conf);
+        console.log(t.transliterate(testStr));
+    }
 
 
     //createTestChecksResults(conf);
