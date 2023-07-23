@@ -158,7 +158,7 @@ class NormalizedConfig {
         const uniqueLetters = [...new Set(letters)];
         return uniqueLetters
             .filter(v => !includeOtherLangLetters // get rid of other languages' letters (if needed)
-                ? !Object.keys(cfg.otherLanguagesLettersDict).includes(v)
+                ? !cfg.otherLanguagesLettersDict.hasOwnProperty(v)
                 : true)
             .sort(NormalizedConfig.alphabetOrderComparator);
     }

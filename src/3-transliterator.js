@@ -223,7 +223,7 @@ class Transliterator {
         const srcVowels = this.#getSourceVowels(true);
         const exemplars = this.#getSoftingExemplars(cfg);
 
-        const keysListIncludes = (obj, key) => Object.keys(obj).includes(key);
+        const keysListIncludes = (obj, key) => obj.hasOwnProperty(key);
 
         for (let upr = 0, lwr = 1; upr < sourceAlphabet.length - 1; upr += 2, lwr += 2) {
             const [upper, lower] = [sourceAlphabet[upr], sourceAlphabet[lwr]];
