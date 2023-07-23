@@ -28,6 +28,8 @@ class Transliterator {
 
     #useDiacritics = true; //TODO: get rid of it
 
+    static #tt = 0; // TODO: remove, temporary
+
     static stringUtils = {
         // TODO: consider StringValueOrArrayHelpers.toUpperCase - should it be modified and used instead?
         toUpperCase: function (v) {
@@ -36,8 +38,11 @@ class Transliterator {
         toLowerCase: function (v) {
             return v.toLocaleLowerCase();
         },
+        replaceLettersFromStr: function (v, lettersToReplace, replacement) {
+            return lettersToReplace.reduce((accumulated, letter) => accumulated.replaceAll(letter, replacement), v);
+        },
         removeLettersFromStr: function (v, lettersToRemove) {
-            return lettersToRemove.reduce((accumulated, letter) => accumulated.replaceAll(letter, ''), v);
+            return this.replaceLettersFromStr(v, lettersToRemove, '');
         }
     };
 
@@ -82,9 +87,8 @@ class Transliterator {
 
         const tempApo = '⟨≀⟩';
         const apostrophesStr = Object.keys(cfg.apostrophesSingleKeyDict)[0];
-        for (const apo of apostrophesStr.split('')) {
-            lat = lat.replaceAll(apo, tempApo); // To not mix real apostophes with softing ones which possibly will be added on the next step
-        }
+        // To not mix real apostrophes with softing ones which possibly will be added on the next step
+        lat = Transliterator.stringUtils.replaceLettersFromStr(lat, Array.from(apostrophesStr), tempApo);
 
         for (const [softingVow, softingVowVals] of Object.entries(cfg.softingVowelsMultiDict)) {
             for (const unsoftableCon of cfg.unsoftableConsonants) {
@@ -233,13 +237,18 @@ class Transliterator {
                 // TODO: try to make pushTransliteratedResult() versatile
                 //  - it's almost the same as in the other places
                 const pushTransliteratedResult = (exemplar) => {
-                    const res = this.transliterate(`${exemplar.upper.source}${upper}`)
+                    if (exemplar.upper.source == null || exemplar.lower.source == null) {
+                        //return;
+                    }
+
+                    const res = this.transliterate(`${exemplar.upper.source || ''}${upper}`)
                         + ' '
-                        + this.transliterate(`${exemplar.lower.source}${lower}`);
+                        + this.transliterate(`${exemplar.lower.source || ''}${lower}`);
 
                     const toRemove = [exemplar.upper.translated, exemplar.lower.translated];
                     const toPush = Transliterator.stringUtils.removeLettersFromStr(res, toRemove);
                     currResults.push(toPush);
+
                 };
 
                 pushTransliteratedResult(exemplars.softableConsonant);
@@ -283,13 +292,15 @@ class Transliterator {
                         };
 
                         const pushTransliteratedResult = (exemplar) => {
-                            if (exemplar.upper.source != null && exemplar.lower.source != null) {
-                                const res = this.transliterate(exemplar.lower.source + lower);
-                                const result = res + ' ' + res;
-
-                                const toPush = removeSofteningLetters(result)
-                                currResults.push(toPush);
+                            if (exemplar.upper.source == null || exemplar.lower.source == null) {
+                                return;
                             }
+
+                            const res = this.transliterate(exemplar.lower.source + lower);
+                            const result = res + ' ' + res;
+
+                            const toPush = removeSofteningLetters(result)
+                            currResults.push(toPush);
                         };
                         if (cfg.affectVowelNotConsonantWhenSofting) {
                             pushTransliteratedResult(exemplars.softableConsonant);
@@ -298,17 +309,19 @@ class Transliterator {
 
                     } else if (keysListIncludes(cfg.softableConsonantsDict, upper)) {
                         const pushTransliteratedResult = (exemplar) => {
-                            if (exemplar.upper.source != null && exemplar.lower.source != null) {
-                                const result = this.transliterate(upper + exemplar.upper.source)
-                                    + ' '
-                                    + this.transliterate(lower + exemplar.lower.source);
-
-                                const toPush = Transliterator.stringUtils.removeLettersFromStr(result, [
-                                    exemplar.upper.translated,
-                                    exemplar.lower.translated]);
-
-                                currResults.push(toPush);
+                            if (exemplar.upper.source == null || exemplar.lower.source == null) {
+                                return;
                             }
+
+                            const result = this.transliterate(upper + exemplar.upper.source)
+                                + ' '
+                                + this.transliterate(lower + exemplar.lower.source);
+
+                            const toPush = Transliterator.stringUtils.removeLettersFromStr(result, [
+                                exemplar.upper.translated,
+                                exemplar.lower.translated]);
+
+                            currResults.push(toPush);
                         };
                         pushTransliteratedResult(exemplars.softingSign);
 
@@ -340,7 +353,7 @@ class Transliterator {
                         .map(m => Transliterator.stringUtils.toUpperCase(last(m.split(' '))))
                         .indexOf(Transliterator.stringUtils.toUpperCase(last(v.split(' '))))
                     === i) // only with unique latest value (case insens.)
-                .map(v => (v.length && v.match(/\S.*/) != null) ? v : '—') // if whitespaced or empty - replace with '—'
+                .map(v => (v.length && v.match(/\S.*/) != null) ? v : '—') // if whitespace or empty, replace with '—'
                 .map(v => transformIfNeeded(v))
                 .join(', ');
         }
