@@ -81,3 +81,20 @@ for (const conf of configs) {
 
     //createTestChecksResults(conf);
 }
+
+// save end datetime:
+const end = new Date();
+
+// print execution time:
+const executionTime = (end - start) / 1000;
+console.log(`Execution time: ${executionTime} seconds`);
+
+
+// ДО ПОКРАЩЕННЯ:
+// Execution time: 2.027 seconds
+// V8 top down total: 1456 ms
+
+
+// після покращення detectAndFixCapsLocked (~ 2x швидше):
+// Execution time: 0.892 seconds
+// V8 top down total: 768 ms

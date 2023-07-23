@@ -505,50 +505,64 @@ class Transliterator {
         return res;
     }
 
-    // Fixes uppercased issues, e.g. "ЩУКА"->"ŠčUKA" to "ŠČUKA"
-    // TODO: PROFILER: long time running
-    #detectAndFixCapsLocked(txt, repeatTimesLeft) {
-        let res = txt;
-        repeatTimesLeft = repeatTimesLeft ?? 2;
+    /**
+     * Fixes uppercase issues, e.g. "ЩУКА"->"ŠčUKA" to "ŠČUKA"
+     */
+    #detectAndFixCapsLocked(txt) {
+        const digraphs = new Set(this.#config.getDigraphs().map(digraph => Transliterator.stringUtils.toLowerCase(digraph)));
 
-        // IssueAFTER or BEFOREIssue (a(1), b(2), c(3) and d(5) groups respectively)
-        // TODO q - for apostrophes todo append first OR and other spec symbols
-        const groupIdx = {
-            a: 1,
-            b: 2,
-            c: 3,
-            q: 4,
-            d: 5
-        };
+        // This regex contains 6 groups (for 2 main cases):
+        //    Case 1: Issue(')AFTERWORD (groups: Issue = a, possible apostrophe = p, AFTERWORD = b)
+        // OR Case 2: BEFOREWORD(')Issue (groups: BEFOREWORD = c, possible apostrophe = q, Issue = d)
+        // TODO: append other spec symbols to p and q
+        const pattern = /(?<a>\p{Lu}\p{Ll}+)(?<p>['"]*)(?<b>\p{Lu}+)|(?<c>\p{Lu}+)(?<q>['"]*)(?<d>\p{Lu}\p{Ll}+)/gu;
 
-        const pattern = /(?<a>\p{Lu}\p{Ll}+)(?<b>\p{Lu}+)|(?<c>\p{Lu}+)(?<q>['"]*)(?<d>\p{Lu}\p{Ll}+)/gu;
-        const matches = [...res.matchAll(pattern)];
+        const replaceAt = (str, index, replacement) =>
+            str.slice(0, index)
+            + replacement
+            + str.slice(index + replacement.length);
 
-        const mappedMatches = matches.map(m => ({
-            probablyIssue: m[groupIdx.a] != null ? m[groupIdx.a] : m[groupIdx.d],
-            after: m[groupIdx.b] != null ? m[groupIdx.b] : '',
-            before: m[groupIdx.c] != null ? m[groupIdx.c] : '',
-            specSymb2: m[groupIdx.q] != null ? m[groupIdx.q] : '',
-            index: m.index
-        }));
+        let words = txt.split(" ");
 
-        const digraphs = this.#config.getDigraphs();
+        const maxRepeatTimes = 5; // run several times to fix more complex cases
+        for (let repeat = 0; repeat < maxRepeatTimes; repeat++) {
+            let matchesWereFound = false;
+            words = words.map(word => {
+                let match;
 
-        for (const m of mappedMatches) {
-            if (digraphs.includes(Transliterator.stringUtils.toLowerCase(m.probablyIssue))) {
-                const replaceAt = (str, index, replacement) =>
-                    str.substr(0, index)
-                    + replacement
-                    + str.substr(index + replacement.length);
+                while (match = pattern.exec(word)) {
+                    const {groups} = match;
 
-                res = replaceAt(res, m.index, m.before + m.specSymb2 + Helpers.toUpperCase(m.probablyIssue, this.#config.exceptionalCaseRules) + m.after);
-            }
+                    const before = groups.c || '';
+                    const specSymb1 = groups.q || '';
+                    const probablyIssue = groups.a || groups.d;
+                    const specSymb2 = groups.p || '';
+                    const after = groups.b || '';
+
+                    if (digraphs.has(Transliterator.stringUtils.toLowerCase(probablyIssue))) {
+                        word = replaceAt(
+                            word,
+                            match.index,
+                            before
+                            + specSymb1
+                            + Helpers.toUpperCase(probablyIssue, this.#config.exceptionalCaseRules)
+                            + specSymb2
+                            + after
+                        );
+                    }
+
+                    if (!matchesWereFound) matchesWereFound = true;
+                }
+
+                return word;
+            });
+
+            if (!matchesWereFound) break;
         }
 
-        return repeatTimesLeft === 0
-            ? res
-            : this.#detectAndFixCapsLocked(res, repeatTimesLeft - 1); // run several times for better results
+        return words.join(" ");
     }
+
 
     #replaceAllByDict(src, dict, useLocationInWordAlgo) {
         const indexToGet = !this.#useDiacritics ? 1 : 0;
