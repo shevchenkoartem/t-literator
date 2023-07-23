@@ -169,7 +169,6 @@ class NormalizedConfig {
     }
 
     // TODO: would be nice to make it private when it's possible:
-    // TODO: PROFILER: often used
     /**
      * A custom comparator for sorting letters in a specific order.
      * Certain characters are given higher priority than others.
@@ -213,14 +212,14 @@ class NormalizedConfig {
         return signChanger * a.localeCompare(b, 'uk', {caseFirst: 'upper'});
     }
 
-    // TODO /* test, rethink collections */  // TODO прочистити від шлаку
-    // TODO: тут чи повернути в транслітератор?
-    // TODO: PROFILER: heavy usage: 38 ticks
+    /**
+     * Returns an array of unique digraphs (specified letter combinations) from various dictionaries in config.
+     * @returns {string[]} An array of unique digraphs.
+     */
     getDigraphs() {
         const cfg = this.#config;
         const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
 
-        let letterHeap = [];
         const dictsToGetFrom = [
             cfg.beforeStartDict,
             cfg.dict,
@@ -231,23 +230,16 @@ class NormalizedConfig {
             cfg.otherLanguagesLettersDict,
             cfg.afterFinishDict
         ];
-        for (const dict of dictsToGetFrom) {
-            letterHeap = letterHeap.concat(Hlprs.flatValuesAt(dict, dontUseDiacritics));
-        }
 
-        const digraphs = [];
-        for (const el of letterHeap) {
-            if (el == null) { // it shouldn't happen
-                continue;
-            }
+        const letterHeap = dictsToGetFrom.flatMap(dict => Hlprs.flatValuesAt(dict, dontUseDiacritics));
 
-            if (el.length > 1) {
-                digraphs.push(el.toLowerCase());
-            }
-        }
+        const digraphs = letterHeap
+            .filter(el => el && el.length > 1)
+            .map(el => el.toLowerCase());
 
-        return digraphs.filter((v, i, s) => s.indexOf(v) === i);  // get unique
+        return [...new Set(digraphs)]; // get unique
     }
+
 
     #ensureNormalized() {
         const cfg = this.#config;
