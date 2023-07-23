@@ -178,8 +178,8 @@ class NormalizedConfig {
      * @return A negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second.
      */
     static alphabetOrderComparator(a, b) {
-        const shouldBeLast = '\'’*';
-        let signChanger = shouldBeLast.includes(a) !== shouldBeLast.includes(b) ? -1 : 1;
+        const shouldBeLast = new Set(["'", '’', '*']);
+        let signChanger = shouldBeLast.has(a) !== shouldBeLast.has(b) ? -1 : 1;
 
         const specialGroupOrders = [
             'AaȦȧÄä',
@@ -196,8 +196,7 @@ class NormalizedConfig {
 
             if (aInGroup || bInGroup) {
                 if (aInGroup && bInGroup) {
-                    return group.indexOf(a).toString()
-                        .localeCompare(group.indexOf(b).toString());
+                    return group.indexOf(a) - group.indexOf(b);
                 } else {
                     if (aInGroup) {
                         a = group[0];
@@ -428,18 +427,19 @@ class NormalizedConfig {
         // TODO: append func for 3 letters case (or probably each of possible combinations)
 
         if (Array.isArray(arrOrDictOrMulti)) {
-            const toConcat = [];
+            let arrOrDictOrMultiSet = new Set(arrOrDictOrMulti);
+            let toConcatSet = new Set();
 
-            for (const item of arrOrDictOrMulti) {
+            for (const item of arrOrDictOrMultiSet) {
                 for (const toCaseFunc of toCaseFuncs) {
                     const toPush = toCaseFunc(item);
-                    if (!arrOrDictOrMulti.includes(toPush) && !toConcat.includes(toPush)) {
-                        toConcat.push(toPush);
+                    if (!arrOrDictOrMultiSet.has(toPush)) {
+                        toConcatSet.add(toPush);
                     }
                 }
             }
 
-            toConcat.forEach(val => arrOrDictOrMulti.push(val)); // instead of: arrOrDict = arrOrDict.concat(toConcat);
+            arrOrDictOrMulti.push(...toConcatSet);
         } else { // dictionary or multi-dictionary:
             for (const [lowerKey, lowerArrOrAffectionDict] of Object.entries(arrOrDictOrMulti)) {
                 for (const toCaseFunc of toCaseFuncs) {

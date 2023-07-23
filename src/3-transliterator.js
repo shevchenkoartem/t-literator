@@ -220,7 +220,7 @@ class Transliterator {
         const result = {};
         const sourceAlphabet = cfg.getSourceAlphabet(false, false);
 
-        const srcVowels = this.#getSourceVowels(true);
+        const srcVowels = new Set(this.#getSourceVowels(true));
         const exemplars = this.#getSoftingExemplars(cfg);
 
         const keysListIncludes = (obj, key) => obj.hasOwnProperty(key);
@@ -271,7 +271,7 @@ class Transliterator {
                 }
 
                 if (!ignoreSofteningCases) {
-                    if (srcVowels.includes(upper)) {
+                    if (srcVowels.has(upper)) {
                         const that = this;
                         const removeSofteningLetters = function (str) {
                             return Transliterator.stringUtils.removeLettersFromStr(str, [
@@ -350,6 +350,15 @@ class Transliterator {
             const otherLetters = this.getTransliteratedAlphabet(true)
                 .filter(l => !resultValuesStr.includes(l))
                 .join(', '); // todo: add uppers as well and format into pairs
+
+            // TODO: check this fix (does it add some unnecessary letters?):
+            /*
+            const resultValuesSet = new Set(Object.values(result).flatMap(s => s.split(' ')));
+
+            const otherLetters = this.getTransliteratedAlphabet(true)
+                .filter(l => !resultValuesSet.has(l))
+                .join(', '); // todo: add uppers as well and format into pairs
+            */
 
             if (otherLetters.length) {
                 result[Transliterator.RESULT_OTHERS_KEY] = otherLetters;
@@ -585,20 +594,21 @@ class Transliterator {
 
     // TODO: CONFIG functionality part
     #getSourceVowels(includeOtherLangLetters) {
-        const generalCyrVowels = [ // TODO: make lower string
+        const generalCyrVowels = new Set([
             'А', 'а', 'Е', 'е', 'Ё', 'ё',
             'Є', 'є', 'И', 'и', 'І', 'і',
             'Ї', 'ї', 'О', 'о', 'У', 'у',
             'Ы', 'ы', 'Э', 'э', 'Ю', 'ю',
             'Я', 'я'
-        ];
+        ]);
         const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
-        return alphabet.filter(l => generalCyrVowels.includes(l));
+        return alphabet.filter(l => generalCyrVowels.has(l));
     }
+
 
     // TODO: CONFIG functionality part
     #getSourceConsonants(includeOtherLangLetters) {
-        const generalCyrConsonants = [ // TODO: make lower string
+        const generalCyrConsonants = new Set([
             'Б', 'б', 'В', 'в', 'Г', 'г', 'Ґ', 'ґ', 'Д',
             'д', 'Ѓ', 'ѓ', 'Ђ', 'ђ', 'Ж', 'ж', 'З', 'з',
             'З́', 'з́', 'Ѕ', 'ѕ', 'Й', 'й', 'Ј', 'ј', 'К',
@@ -607,10 +617,10 @@ class Transliterator {
             'с́', 'Т', 'т', 'Ћ', 'ћ', 'Ќ', 'ќ', 'Ў', 'ў',
             'Ф', 'ф', 'Х', 'х', 'Ц', 'ц', 'Ч', 'ч', 'Џ',
             'џ', 'Ш', 'ш', 'Щ', 'щ'
-        ];
+        ]);
 
         const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
-        return alphabet.filter(l => generalCyrConsonants.includes(l));
+        return alphabet.filter(l => generalCyrConsonants.has(l));
 
         /*      this.#config.unsoftableConsonants.concat(Object.keys(this.#config.softableConsonantsDict));
 
@@ -640,11 +650,11 @@ class Transliterator {
 
     // TODO: CONFIG functionality part
     #getSourceSpecialSigns(includeOtherLangLetters) {
-        const generalSpecialSigns = [ // TODO: make lower string
+        const generalSpecialSigns = new Set([
             'Ъ', 'ъ', 'Ь', 'ь', "'", '’',
-        ];
+        ]);
         const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
-        return alphabet.filter(l => generalSpecialSigns.includes(l));
+        return alphabet.filter(l => generalSpecialSigns.has(l));
     }
 
     static #getPositionalValue(from, preIs0_midIs1_postIs2) { // для обробки можливості мати тріаду префікс-мід-пост

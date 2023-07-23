@@ -15,8 +15,14 @@ class ConfigsCollection {
     }
 
     get isEmpty() {
-        return Object.keys(this.#configs).length === 0
-            && Object.getPrototypeOf(this.#configs) === Object.prototype;
+        let isEmpty = true;
+        // this is an optimization, never mind "'for' statement doesn't loop" warning:
+        for (let key in this.#configs) {
+            isEmpty = false;
+            break;
+        }
+
+        return isEmpty && Object.getPrototypeOf(this.#configs) === Object.prototype;
     }
 
     get configCodes() {

@@ -86,8 +86,7 @@ class StringValueOrArrayHelpers {
     }
 
     //TODO: rethink name:
-    //get rid of useDiacritics
-    // TODO: PROFILER: heavy usage
+    // get rid of useDiacritics and think if we need it
     static flatValuesAt(obj, dontUseDiacritics) {
         const indexToGet = dontUseDiacritics ? 1 : 0;
         return Object.values(obj).flatMap(val =>
