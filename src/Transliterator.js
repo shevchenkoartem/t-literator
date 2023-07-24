@@ -3,8 +3,8 @@ const Helpers = typeof window === 'undefined'
     : /* browser */ StringValueOrArrayHelpers;
 
 const FromGitHubReader = typeof window === 'undefined'
-    ? /* Node.js */ require('./helpers/DefaultConfigReaderFromGitHub')
-    : /* browser */ DefaultConfigReaderFromGitHub;
+    ? /* Node.js */ require('./helpers/GitHubConfigProvider')
+    : /* browser */ GitHubConfigProvider;
 
 const Config = typeof window === 'undefined'
     ? /* Node.js */ require('./TransliterationConfig')
@@ -20,13 +20,20 @@ class Transliterator {
     static #UPPER_TECH_LETER = 'Ꙍ';
     static #LOWER_TECH_LETER = 'ꙍ';
 
-    static RESULT_OTHERS_KEY = "_others_";
+    static #RESULT_OTHERS_KEY = "_others_";
 
-    #config = {};
-    #configsCache = {};
-    #implementingGetConfigObject; // TODO: make this getting text, not JSON. And under the hood do JSON parsing with removing comments: txt.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1')
+    #currentConfig = {};
+    #configs = {};
 
-    static #tt = 0; // TODO: remove, temporary
+    /**
+     * The field is of type IConfigObjectProvider.
+     * We are not using TypeScript here, but imagine declaring this "interface":
+     *
+     *      interface IConfigObjectProvider {
+     *          getConfigObject(cfgCode: string): { [key: string]: any };
+     *      }
+     */
+    #configObjectProvider; // TODO: make this getting text, not JSON. And under the hood do JSON parsing with removing comments: txt.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1')
 
     static stringUtils = {
         // TODO: consider StringValueOrArrayHelpers.toUpperCase - should it be modified and used instead?
@@ -44,18 +51,18 @@ class Transliterator {
         }
     };
 
-    constructor(rawConfigsOrImplementingGetConfigObject = new FromGitHubReader(), /*[optional]*/  cfgName) {
+    constructor(rawConfigsOrConfigObjectProvider = new FromGitHubReader(), /*[optional]*/  cfgName) {
         let rawConfigsToInitialize = [];
 
-        if (Array.isArray(rawConfigsOrImplementingGetConfigObject)) {
+        if (Array.isArray(rawConfigsOrConfigObjectProvider)) {
             // raw configs array is passed:
-            rawConfigsToInitialize = rawConfigsOrImplementingGetConfigObject;
+            rawConfigsToInitialize = rawConfigsOrConfigObjectProvider;
         } else {
-            // specific implementingGetConfigObject is passed:
-            this.#implementingGetConfigObject = rawConfigsOrImplementingGetConfigObject;
+            // specific configObjectProvider is passed:
+            this.#configObjectProvider = rawConfigsOrConfigObjectProvider;
         }
 
-        this.#configsCache = new Configs(rawConfigsToInitialize);
+        this.#configs = new Configs(rawConfigsToInitialize);
 
         if (cfgName != null) {
             this.useConfig(cfgName);
@@ -63,12 +70,12 @@ class Transliterator {
     }
 
     get config() {
-        return {...this.#config};
+        return {...this.#currentConfig};
     }
 
     // TODO: PROFILER: heavy usage
     transliterate(txt) {
-        const cfg = this.#config;
+        const cfg = this.#currentConfig;
         let lat = txt;
 
         if (cfg.useLocationInWordAlgo) {
@@ -194,16 +201,16 @@ class Transliterator {
     }
 
     useConfig(cfgCode) {
-        if (this.#config.code === cfgCode) {
+        if (this.#currentConfig.code === cfgCode) {
             return; // already in use
         }
 
-        if (!this.#configsCache.hasConfig(cfgCode)) {
-            const cfg = this.#implementingGetConfigObject.getConfigObject(cfgCode);
-            this.#configsCache.upsertConfig(cfg);
+        if (!this.#configs.hasConfig(cfgCode)) {
+            const cfg = this.#configObjectProvider.getConfigObject(cfgCode);
+            this.#configs.upsertConfig(cfg);
         }
 
-        this.#config = this.#configsCache.getConfig(cfgCode);
+        this.#currentConfig = this.#configs.getConfig(cfgCode);
     }
 
     // TODO: kind of CONFIG functionality part (but it uses transliterate!!!!)
@@ -217,12 +224,12 @@ class Transliterator {
      * @returns {Object} - A dictionary with pairs like { "Є є": "Je je, ie" }
      */
     getConfigTransliterationInfo(ignorePositionalCases, ignoreSofteningCases) {
-        const cfg = this.#config;
+        const cfg = this.#currentConfig;
 
         const result = {};
         const sourceAlphabet = cfg.getSourceAlphabet(false, false);
 
-        const srcVowels = new Set(this.#getSourceVowels(true));
+        const srcVowels = new Set(this.#currentConfig.getSourceVowels(true));
         const exemplars = this.#getSoftingExemplars(cfg);
 
         const keysListIncludes = (obj, key) => obj.hasOwnProperty(key);
@@ -372,7 +379,7 @@ class Transliterator {
             */
 
             if (otherLetters.length) {
-                result[Transliterator.RESULT_OTHERS_KEY] = otherLetters;
+                result[Transliterator.#RESULT_OTHERS_KEY] = otherLetters;
             }
             return result;
         };
@@ -435,7 +442,7 @@ class Transliterator {
 
     // TODO: temporary; rewrite tests and get rid of it.
     getConfigSourceAlphabet(getOnlyLower, includeOtherLangLettersTransliteration) {
-        return this.#config.getSourceAlphabet(getOnlyLower, includeOtherLangLettersTransliteration);
+        return this.#currentConfig.getSourceAlphabet(getOnlyLower, includeOtherLangLettersTransliteration);
     }
 
     // TODO: looks like CONFIG functionality part (but it uses transliterate!!!!)
@@ -448,7 +455,7 @@ class Transliterator {
      * @returns {string[]} An array of unique sorted letters.
      */
     getTransliteratedAlphabet(getOnlyLower, includeOtherLangLettersTransliteration) {
-        const cfg = this.#config;
+        const cfg = this.#currentConfig;
 
         let letterHeap = [...Helpers.flattenValues(cfg.beforeStartDict)
             .map(val => this.transliterate(val))]; // TODO: refactor others places to use map(), filter() and others
@@ -505,7 +512,7 @@ class Transliterator {
     }
 
     #markStartingPositions(txt) {
-        const letters = this.#config.getSourceAlphabet(false, true)
+        const letters = this.#currentConfig.getSourceAlphabet(false, true)
             .concat([Transliterator.#UPPER_TECH_LETER, Transliterator.#LOWER_TECH_LETER])
             .join('');
 
@@ -526,7 +533,7 @@ class Transliterator {
      * Fixes uppercase issues, e.g. "ЩУКА"->"ŠčUKA" to "ŠČUKA"
      */
     #detectAndFixCapsLocked(txt) {
-        const digraphs = new Set(this.#config.getDigraphs().map(digraph => Transliterator.stringUtils.toLowerCase(digraph)));
+        const digraphs = new Set(this.#currentConfig.getDigraphs().map(digraph => Transliterator.stringUtils.toLowerCase(digraph)));
 
         // This regex contains 6 groups (for 2 main cases):
         //    Case 1: Issue(')AFTERWORD (groups: Issue = a, possible apostrophe = p, AFTERWORD = b)
@@ -562,7 +569,7 @@ class Transliterator {
                             match.index,
                             before
                             + specSymb1
-                            + Helpers.toUpperCase(probablyIssue, this.#config.exceptionalCaseRules)
+                            + Helpers.toUpperCase(probablyIssue, this.#currentConfig.exceptionalCaseRules)
                             + specSymb2
                             + after
                         );
@@ -598,71 +605,6 @@ class Transliterator {
         }
 
         return res;
-    }
-
-    // TODO: CONFIG functionality part
-    #getSourceVowels(includeOtherLangLetters) {
-        const generalCyrVowels = new Set([
-            'А', 'а', 'Е', 'е', 'Ё', 'ё',
-            'Є', 'є', 'И', 'и', 'І', 'і',
-            'Ї', 'ї', 'О', 'о', 'У', 'у',
-            'Ы', 'ы', 'Э', 'э', 'Ю', 'ю',
-            'Я', 'я'
-        ]);
-        const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
-        return alphabet.filter(l => generalCyrVowels.has(l));
-    }
-
-
-    // TODO: CONFIG functionality part
-    #getSourceConsonants(includeOtherLangLetters) {
-        const generalCyrConsonants = new Set([
-            'Б', 'б', 'В', 'в', 'Г', 'г', 'Ґ', 'ґ', 'Д',
-            'д', 'Ѓ', 'ѓ', 'Ђ', 'ђ', 'Ж', 'ж', 'З', 'з',
-            'З́', 'з́', 'Ѕ', 'ѕ', 'Й', 'й', 'Ј', 'ј', 'К',
-            'к', 'Л', 'л', 'Љ', 'љ', 'М', 'м', 'Н', 'н',
-            'Њ', 'њ', 'П', 'п', 'Р', 'р', 'С', 'с', 'С́',
-            'с́', 'Т', 'т', 'Ћ', 'ћ', 'Ќ', 'ќ', 'Ў', 'ў',
-            'Ф', 'ф', 'Х', 'х', 'Ц', 'ц', 'Ч', 'ч', 'Џ',
-            'џ', 'Ш', 'ш', 'Щ', 'щ'
-        ]);
-
-        const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
-        return alphabet.filter(l => generalCyrConsonants.has(l));
-
-        /*      this.#config.unsoftableConsonants.concat(Object.keys(this.#config.softableConsonantsDict));
-
-                const resultFromBeforeStartDict = [];
-                for (const con of result) {
-                    const entries = Object.entries(this.#config.beforeStartDict);
-                    for (const [key, vals] of entries) {
-                        const valOrArr = vals;
-
-                        const needToPush = Array.isArray(valOrArr)
-                            ? valOrArr.includes(con)
-                            : valOrArr === con;
-
-                        if (needToPush) {
-                            resultFromBeforeStartDict.push(key);
-                        }
-                    }
-                }
-                result = result.concat(resultFromBeforeStartDict);
-
-                if (needUniqueAndSorted) {
-                    result = result
-                        .filter((v, i, s) => s.indexOf(v) === i) // get unique
-                        .sort(Transliterator.#alphabetOrderComparator);
-                }*/
-    }
-
-    // TODO: CONFIG functionality part
-    #getSourceSpecialSigns(includeOtherLangLetters) {
-        const generalSpecialSigns = new Set([
-            'Ъ', 'ъ', 'Ь', 'ь', "'", '’',
-        ]);
-        const alphabet = this.#config.getSourceAlphabet(false, includeOtherLangLetters);
-        return alphabet.filter(l => generalSpecialSigns.has(l));
     }
 
     static #getPositionalValue(from, preIs0_midIs1_postIs2) { // для обробки можливості мати тріаду префікс-мід-пост

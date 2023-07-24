@@ -2,7 +2,7 @@ const fs = require('fs');
 const walk = require('walk'); // prereq: npm install --save walk
 const path = require('path');
 
-class FileDataReader {
+class FileDataReader /* implements IConfigObjectProvider */ {
     #projectHomeDir = './';
     #configPaths = {};
     #CONFIG_EXT = '.config';

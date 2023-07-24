@@ -1,5 +1,5 @@
 const Transliterator = require('../src/Transliterator');
-const FileDataReader = require('./file-data-reader');
+const FileDataReader = require('./FileDataReader');
 const path = require('path');
 
 console.log(`Tests are running from dir: ${__dirname}`);

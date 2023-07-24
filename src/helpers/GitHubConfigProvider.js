@@ -1,4 +1,4 @@
-class DefaultConfigReaderFromGitHub {
+class GitHubConfigProvider /* implements IConfigObjectProvider */ {
     static #PROJECT_HOME_LINK = `https://raw.githubusercontent.com/shevchenkoartem/t-literator-configs/master/`;
 
     getConfigObject(cfgCode) {
@@ -9,7 +9,7 @@ class DefaultConfigReaderFromGitHub {
         // TODO: think about additional/configs
 
         // TODO: consider subfolders:
-        let jsonText = DefaultConfigReaderFromGitHub.#httpGet(`${DefaultConfigReaderFromGitHub.#PROJECT_HOME_LINK}src/${cfgCode}.config`);
+        let jsonText = GitHubConfigProvider.#httpGet(`${GitHubConfigProvider.#PROJECT_HOME_LINK}src/${cfgCode}.config`);
         jsonText = jsonText.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); // remove comments, not affecting web links
         jsonText = jsonText.replace(/[\u202F\u00A0]/g, ' '); // replace a non-breaking space to a common one
 
@@ -33,8 +33,8 @@ class DefaultConfigReaderFromGitHub {
 // Exporting class:
 if (typeof window === 'undefined') {
     // Node.js:
-    module.exports = DefaultConfigReaderFromGitHub;
+    module.exports = GitHubConfigProvider;
 } else {
     // browser:
-    window.DefaultConfigReaderFromGitHub = DefaultConfigReaderFromGitHub;
+    window.DefaultConfigReaderFromGitHub = GitHubConfigProvider;
 }
