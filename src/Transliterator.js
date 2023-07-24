@@ -1,18 +1,18 @@
 const Helpers = typeof window === 'undefined'
-    ? /* Node.js */ require('./0-string-value-or-array-helpers')
+    ? /* Node.js */ require('./helpers/StringValueOrArrayHelpers')
     : /* browser */ StringValueOrArrayHelpers;
 
 const FromGitHubReader = typeof window === 'undefined'
-    ? /* Node.js */ require('./0-default-config-reader-from-github')
+    ? /* Node.js */ require('./helpers/DefaultConfigReaderFromGitHub')
     : /* browser */ DefaultConfigReaderFromGitHub;
 
 const Config = typeof window === 'undefined'
-    ? /* Node.js */ require('./1-normalized-config')
-    : /* browser */ NormalizedConfig;
+    ? /* Node.js */ require('./TransliterationConfig')
+    : /* browser */ TransliterationConfig;
 
 const Configs = typeof window === 'undefined'
-    ? /* Node.js */ require('./2-configs-collection')
-    : /* browser */ ConfigsCollection;
+    ? /* Node.js */ require('./TransliterationConfigCollection')
+    : /* browser */ TransliterationConfigCollection;
 
 class Transliterator {
     #WORD_START = '【⟨'; // TODO: make static?

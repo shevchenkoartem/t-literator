@@ -10,7 +10,7 @@ class StringValueOrArrayHelpers {
             const titleCasedArr = [...valOrArr];
 
             for (let i = 0; i < titleCasedArr.length; ++i) {
-                titleCasedArr[i] = StringValueOrArrayHelpers.toTitleCase(titleCasedArr[i]);
+                titleCasedArr[i] = this.toTitleCase(titleCasedArr[i]);
             }
 
             return titleCasedArr;
@@ -43,7 +43,7 @@ class StringValueOrArrayHelpers {
             const upperCasedArr = [...valOrArr];
 
             for (let i = 0; i < upperCasedArr.length; ++i) {
-                upperCasedArr[i] = StringValueOrArrayHelpers.toUpperCase(upperCasedArr[i]);
+                upperCasedArr[i] = this.toUpperCase(upperCasedArr[i]);
             }
 
             return upperCasedArr;
@@ -68,7 +68,7 @@ class StringValueOrArrayHelpers {
             const diacriticlessArr = [...valOrArr];
 
             for (let i = 0; i < diacriticlessArr.length; ++i) {
-                diacriticlessArr[i] = StringValueOrArrayHelpers.toDiacriticless(diacriticlessArr[i]);
+                diacriticlessArr[i] = this.toDiacriticless(diacriticlessArr[i]);
             }
 
             return diacriticlessArr;

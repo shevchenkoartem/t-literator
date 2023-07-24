@@ -1,10 +1,10 @@
 const Hlprs = typeof window === 'undefined'
-    ? /* Node.js */ require('./0-string-value-or-array-helpers')
+    ? /* Node.js */ require('./helpers/StringValueOrArrayHelpers')
     : /* browser */ StringValueOrArrayHelpers;
 
-// A wrapper over a raw config
+// A wrapper over a raw json config
 // TODO: expose outside unordered maps and sets, not objects and arrays
-class NormalizedConfig {
+class TransliterationConfig {
     static #AFFECTING = 'affecting';
     static #AFFECTED = 'affected';
     static get AFFECTING() { // get-only for outside
@@ -171,7 +171,7 @@ class NormalizedConfig {
         // Filter out other languages' letters if not needed and sort the remaining letters.
         return uniqueLetters
             .filter(letter => includeOtherLangLetters || !cfg.otherLanguagesLettersDict.hasOwnProperty(letter))
-            .sort(NormalizedConfig.alphabetOrderComparator);
+            .sort(TransliterationConfig.alphabetOrderComparator);
     }
 
     #makeLowerAlphabet(array) {
@@ -283,7 +283,7 @@ class NormalizedConfig {
         cfg.unsoftableConsonants = cfg.unsoftableConsonants ?? [];
 
         // dicts:
-        const normalizeDict = NormalizedConfig.#getNormalizedDictStructure;
+        const normalizeDict = TransliterationConfig.#getNormalizedDictStructure;
         cfg.softableConsonantsDict = normalizeDict(cfg.softableConsonantsDict);
         cfg.dict = normalizeDict(cfg.dict);
         cfg.otherLanguagesLettersDict = normalizeDict(cfg.otherLanguagesLettersDict);
@@ -292,7 +292,7 @@ class NormalizedConfig {
         cfg.afterFinishDict = normalizeDict(cfg.afterFinishDict);
 
         // multi-dictionaries:
-        const normalizeMultiDict = NormalizedConfig.#getNormalizedMultiDictStructure;
+        const normalizeMultiDict = TransliterationConfig.#getNormalizedMultiDictStructure;
         cfg.softingSignsMultiDict = normalizeMultiDict(cfg.softingSignsMultiDict);
         cfg.softingVowelsMultiDict = normalizeMultiDict(cfg.softingVowelsMultiDict);
 
@@ -300,7 +300,7 @@ class NormalizedConfig {
         this.#normalizeApostrophesSingleKeyDict();
 
         // beforeStartDict uses its own rules:
-        NormalizedConfig.#completeByUpperAndTitleCased(cfg.beforeStartDict);
+        TransliterationConfig.#completeByUpperAndTitleCased(cfg.beforeStartDict);
 
         // Complete upper and title cases for the following collections:
         const collections = [
@@ -319,7 +319,7 @@ class NormalizedConfig {
         ];
 
         for (const collection of collections) {
-            NormalizedConfig.#completeByUpperAndTitleCased(collection);
+            TransliterationConfig.#completeByUpperAndTitleCased(collection);
         }
 
         cfg.isNormalized = true;
@@ -409,13 +409,13 @@ class NormalizedConfig {
                 const valOrArr = value;
                 const affectionDict = {};
                 // let's make affection values the same:
-                affectionDict[NormalizedConfig.#AFFECTED] = valOrArr;
-                affectionDict[NormalizedConfig.#AFFECTING] = valOrArr;
+                affectionDict[TransliterationConfig.#AFFECTED] = valOrArr;
+                affectionDict[TransliterationConfig.#AFFECTING] = valOrArr;
 
-                res[key] = NormalizedConfig.#getNormalizedDictStructure(affectionDict);
+                res[key] = TransliterationConfig.#getNormalizedDictStructure(affectionDict);
             } else if (typeof value === 'object' && !Array.isArray(value)) {
                 // looks like already containing affection keys/values:
-                res[key] = NormalizedConfig.#getNormalizedDictStructure(value);
+                res[key] = TransliterationConfig.#getNormalizedDictStructure(value);
             } else {
                 // array?
                 throw new Error(`Unsupported multiDict value type: ${value}. ${(this.#UNSUPPORTED_NON_DIACRITIC_VALUES_MSG)}.`);
@@ -485,5 +485,5 @@ class NormalizedConfig {
 
 // If it's Node.js:
 if (typeof window === 'undefined') {
-    module.exports = NormalizedConfig;
+    module.exports = TransliterationConfig;
 }

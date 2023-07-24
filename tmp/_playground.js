@@ -13,7 +13,7 @@ const fs = require('fs');
 
 console.log('Current folder: ' + __dirname);
 
-const Transliterator = require('../src/3-transliterator');
+const Transliterator = require('../src/Transliterator');
 const FileDataReader = require('../tst/file-data-reader');
 
 const reader = new FileDataReader('..');

@@ -1,8 +1,8 @@
-const NormalizedCfg = typeof window === 'undefined'
-    ? /* Node.js */ require('./1-normalized-config')
-    : /* browser */ NormalizedConfig;
+const TransConfig = typeof window === 'undefined'
+    ? /* Node.js */ require('./TransliterationConfig')
+    : /* browser */ TransliterationConfig;
 
-class ConfigsCollection {
+class TransliterationConfigCollection {
     #configs = {};
     #cachedConfigCodes = new Set();
 
@@ -39,7 +39,7 @@ class ConfigsCollection {
 
         let config = this.#configs[configCode];
         if (!config.isNormalized) {
-            this.#configs[configCode] = new NormalizedCfg(config);
+            this.#configs[configCode] = new TransConfig(config);
             config = this.#configs[configCode];
         }
 
@@ -76,5 +76,5 @@ class ConfigsCollection {
 
 // If it's Node.js:
 if (typeof window === 'undefined') {
-    module.exports = ConfigsCollection;
+    module.exports = TransliterationConfigCollection;
 }
