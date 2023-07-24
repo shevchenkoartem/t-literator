@@ -230,7 +230,7 @@ class NormalizedConfig {
     getDigraphs() {
         // TODO: do caching as in getSourceAlphabet()
         const cfg = this.#wrappedConfig;
-        const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
+        //const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
 
         const dictsToGetFrom = [
             cfg.beforeStartDict,
@@ -243,7 +243,7 @@ class NormalizedConfig {
             cfg.afterFinishDict
         ];
 
-        const letterHeap = dictsToGetFrom.flatMap(dict => Hlprs.flatValuesAt(dict, dontUseDiacritics));
+        const letterHeap = dictsToGetFrom.flatMap(dict => Hlprs.flattenValues(dict/*, dontUseDiacritics*/));
 
         const digraphs = letterHeap
             .filter(el => el && el.length > 1)
@@ -413,7 +413,7 @@ class NormalizedConfig {
                 affectionDict[NormalizedConfig.#AFFECTING] = valOrArr;
 
                 res[key] = NormalizedConfig.#getNormalizedDictStructure(affectionDict);
-            } else if (typeof value === 'object') {
+            } else if (typeof value === 'object' && !Array.isArray(value)) {
                 // looks like already containing affection keys/values:
                 res[key] = NormalizedConfig.#getNormalizedDictStructure(value);
             } else {

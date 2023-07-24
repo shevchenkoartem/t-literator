@@ -458,18 +458,18 @@ class Transliterator {
     getTransliteratedAlphabet(getOnlyLower, includeOtherLangLettersTransliteration) {
         const cfg = this.#config;
 
-        const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
-        let letterHeap = [...Helpers.flatValuesAt(cfg.beforeStartDict, dontUseDiacritics)
+        //const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
+        let letterHeap = [...Helpers.flattenValues(cfg.beforeStartDict/*, dontUseDiacritics*/)
             .map(val => this.transliterate(val))]; // TODO: refactor others places to use map(), filter() and others
 
         const valsToRunThruAfterFinishDict = [
-            ...Helpers.flatValuesAt(cfg.dict, dontUseDiacritics),
-            ...Helpers.flatValuesAt(cfg.apostrophesSingleKeyDict, dontUseDiacritics),
-            ...Helpers.flatValuesAt(cfg.softableConsonantsDict, dontUseDiacritics),
-            ...Helpers.flatValuesAt(cfg.softingVowelsMultiDict, dontUseDiacritics),
-            ...Helpers.flatValuesAt(cfg.softingSignsMultiDict, dontUseDiacritics),
+            ...Helpers.flattenValues(cfg.dict/*, dontUseDiacritics*/),
+            ...Helpers.flattenValues(cfg.apostrophesSingleKeyDict/*, dontUseDiacritics*/),
+            ...Helpers.flattenValues(cfg.softableConsonantsDict/*, dontUseDiacritics*/),
+            ...Helpers.flattenValues(cfg.softingVowelsMultiDict/*, dontUseDiacritics*/),
+            ...Helpers.flattenValues(cfg.softingSignsMultiDict/*, dontUseDiacritics*/),
             ...(includeOtherLangLettersTransliteration
-                ? Helpers.flatValuesAt(cfg.otherLanguagesLettersDict, dontUseDiacritics)
+                ? Helpers.flattenValues(cfg.otherLanguagesLettersDict/*, dontUseDiacritics*/)
                 : [])
         ];
 
@@ -484,7 +484,7 @@ class Transliterator {
             letterHeap.push(res);
         }
 
-        letterHeap.push(...Helpers.flatValuesAt(cfg.afterFinishDict, dontUseDiacritics));
+        letterHeap.push(...Helpers.flattenValues(cfg.afterFinishDict/*, dontUseDiacritics*/));
 
         const letters = letterHeap.reduce((accumulated, el) => {
             if (el == null) {

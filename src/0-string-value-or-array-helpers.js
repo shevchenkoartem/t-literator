@@ -86,14 +86,18 @@ class StringValueOrArrayHelpers {
             : valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, "");
     }
 
-    //TODO: rethink name:
-    // get rid of useDiacritics and think if we need it
-    static flatValuesAt(obj, dontUseDiacritics) {
-        const indexToGet = dontUseDiacritics ? 1 : 0;
+
+    /**
+     * Flattens the values in a given object. If the values are objects, it calls the function recursively.
+     *
+     * @param {Object} obj - Object to flatten the values from.
+     * @returns {Array} - Array of flattened values.
+     */
+    static flattenValues(obj) {
         return Object.values(obj).flatMap(val =>
-            val.constructor === Object
-                ? StringValueOrArrayHelpers.flatValuesAt(val, dontUseDiacritics)
-                : val[indexToGet]);
+            typeof val === 'object' && !Array.isArray(val)
+                ? this.flattenValues(val)
+                : val);
     }
 }
 
