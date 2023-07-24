@@ -10,7 +10,7 @@ class StringValueOrArrayHelpers {
             const titleCasedArr = [...valOrArr];
 
             for (let i = 0; i < titleCasedArr.length; ++i) {
-                titleCasedArr[i] = StringValueOrArrayHelpers.toTitleCase(titleCasedArr[i]);
+                titleCasedArr[i] = this.toTitleCase(titleCasedArr[i]);
             }
 
             return titleCasedArr;
@@ -43,7 +43,7 @@ class StringValueOrArrayHelpers {
             const upperCasedArr = [...valOrArr];
 
             for (let i = 0; i < upperCasedArr.length; ++i) {
-                upperCasedArr[i] = StringValueOrArrayHelpers.toUpperCase(upperCasedArr[i]);
+                upperCasedArr[i] = this.toUpperCase(upperCasedArr[i]);
             }
 
             return upperCasedArr;
@@ -68,7 +68,7 @@ class StringValueOrArrayHelpers {
             const diacriticlessArr = [...valOrArr];
 
             for (let i = 0; i < diacriticlessArr.length; ++i) {
-                diacriticlessArr[i] = StringValueOrArrayHelpers.toDiacriticless(diacriticlessArr[i]);
+                diacriticlessArr[i] = this.toDiacriticless(diacriticlessArr[i]);
             }
 
             return diacriticlessArr;
@@ -86,18 +86,26 @@ class StringValueOrArrayHelpers {
             : valOrArr.normalize("NFD").replace(/\p{Diacritic}/gu, "");
     }
 
-    //TODO: rethink name:
-    // get rid of useDiacritics and think if we need it
-    static flatValuesAt(obj, dontUseDiacritics) {
-        const indexToGet = dontUseDiacritics ? 1 : 0;
+
+    /**
+     * Flattens the values in a given object. If the values are objects, it calls the function recursively.
+     *
+     * @param {Object} obj - Object to flatten the values from.
+     * @returns {Array} - Array of flattened values.
+     */
+    static flattenValues(obj) {
         return Object.values(obj).flatMap(val =>
-            val.constructor === Object
-                ? StringValueOrArrayHelpers.flatValuesAt(val, dontUseDiacritics)
-                : val[indexToGet]);
+            typeof val === 'object' && !Array.isArray(val)
+                ? this.flattenValues(val)
+                : val);
     }
 }
 
-// If it's Node.js:
+// Exporting class:
 if (typeof window === 'undefined') {
+    // Node.js:
     module.exports = StringValueOrArrayHelpers;
+} else {
+    // browser:
+    window.StringValueOrArrayHelpers = StringValueOrArrayHelpers;
 }
