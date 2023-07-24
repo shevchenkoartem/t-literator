@@ -6,6 +6,10 @@ class TransliterationConfigCollection {
     #configs = {};
     #cachedConfigCodes = new Set();
 
+    /**
+     * Constructor method
+     * @param {Array} rawConfigs - Array of raw JSON configs.
+     */
     constructor(rawConfigs) {
         if (rawConfigs == null) {
             return;
@@ -32,7 +36,6 @@ class TransliterationConfigCollection {
     }
 
     getConfig(configCode) {
-        // todo: should return a copy?
         if (!this.hasConfig(configCode)) {
             return undefined;
         }
@@ -43,29 +46,35 @@ class TransliterationConfigCollection {
             config = this.#configs[configCode];
         }
 
+        // Return a copy of the config?
+        //return JSON.parse(JSON.stringify(config));
+
         return config;
     }
 
     upsertConfig(rawConfig) {
         if (!rawConfig || !rawConfig.code) {
-            //return false; // when addinng this line, the tests fail
+            //return false; // when adding this line, the tests fail
+            //throw new Error('Invalid configuration object');
         }
 
-        const res = !this.hasConfig(rawConfig.code);
-        this.#configs[rawConfig.code] = rawConfig; // initially, only insert a raw config - for lazyness
+        const wasInserted = !this.hasConfig(rawConfig.code);
+        this.#configs[rawConfig.code] = rawConfig;  // initially, only insert a raw config - for laziness
         this.#cachedConfigCodes.add(rawConfig.code);
 
-        return res; // whether a new one was inserted
+        return wasInserted;
     }
 
     deleteConfig(configCode) {
-        const res = this.hasConfig(configCode);
-        if (res) {
+        let wasDeleted = false;
+
+        if (this.hasConfig(configCode)) {
             delete this.#configs[configCode];
             this.#cachedConfigCodes.delete(configCode);
+            wasDeleted = true;
         }
 
-        return res; // whether it was deleted
+        return wasDeleted;
     }
 
     deleteAll() {
@@ -74,7 +83,11 @@ class TransliterationConfigCollection {
     }
 }
 
-// If it's Node.js:
+// Exporting class:
 if (typeof window === 'undefined') {
+    // Node.js:
     module.exports = TransliterationConfigCollection;
+} else {
+    // browser:
+    window.TransliterationConfigCollection = TransliterationConfigCollection;
 }

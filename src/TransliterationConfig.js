@@ -7,9 +7,11 @@ const Hlprs = typeof window === 'undefined'
 class TransliterationConfig {
     static #AFFECTING = 'affecting';
     static #AFFECTED = 'affected';
+
     static get AFFECTING() { // get-only for outside
         return this.#AFFECTING;
     }
+
     static get AFFECTED() { // get-only for outside
         return this.#AFFECTED;
     }
@@ -47,12 +49,12 @@ class TransliterationConfig {
         return this.#wrappedConfig.link;
     }
 
-     // from language
+    // from language
     get from() {
         return this.#wrappedConfig.from;
     }
 
-     // to language
+    // to language
     get to() {
         return this.#wrappedConfig.to;
     }
@@ -483,7 +485,11 @@ class TransliterationConfig {
     }
 }
 
-// If it's Node.js:
+// Exporting class:
 if (typeof window === 'undefined') {
+    // Node.js:
     module.exports = TransliterationConfig;
+} else {
+    // browser:
+    window.TransliterationConfig = TransliterationConfig;
 }

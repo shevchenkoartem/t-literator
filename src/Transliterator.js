@@ -689,7 +689,11 @@ class Transliterator {
     }
 }
 
-// If it's Node.js:
+// Exporting class:
 if (typeof window === 'undefined') {
+    // Node.js:
     module.exports = Transliterator;
+} else {
+    // browser:
+    window.Transliterator = Transliterator;
 }

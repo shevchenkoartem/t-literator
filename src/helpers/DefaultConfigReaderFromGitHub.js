@@ -30,7 +30,11 @@ class DefaultConfigReaderFromGitHub {
     }
 }
 
-// If it's Node.js:
+// Exporting class:
 if (typeof window === 'undefined') {
+    // Node.js:
     module.exports = DefaultConfigReaderFromGitHub;
+} else {
+    // browser:
+    window.DefaultConfigReaderFromGitHub = DefaultConfigReaderFromGitHub;
 }
