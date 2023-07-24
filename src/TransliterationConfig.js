@@ -19,7 +19,7 @@ class TransliterationConfig {
     static #UNSUPPORTED_NON_DIACRITIC_VALUES_MSG = "Previously supported non-diacritic values are deprecated";
 
     #wrappedConfig = null; // rename to wrappedConfigMap?
-    #cache = {};
+    #cache = new Map();
 
     constructor(rawConfig) {
         this.#wrappedConfig = {...rawConfig};
@@ -125,19 +125,19 @@ class TransliterationConfig {
         return this.#wrappedConfig.afterFinishDict;
     }
 
-    getProperty(propName) {
-        if (!this.#wrappedConfig.hasOwnProperty(propName)) {
-            return undefined;
-        }
-        return this.#configCopy[propName];
-    }
-
     get isEmpty() {
         return this.#wrappedConfig != null;
     }
 
     get isNormalized() {
         return this.#wrappedConfig.isNormalized;
+    }
+
+    getProperty(propName) {
+        if (!this.#wrappedConfig.hasOwnProperty(propName)) {
+            return undefined;
+        }
+        return this.#configCopy[propName];
     }
 
     /**
@@ -147,14 +147,90 @@ class TransliterationConfig {
      * @returns {string[]} An array of unique sorted letters.
      */
     getSourceAlphabet(getOnlyLower, includeOtherLangLetters) {
-        const cacheKey = includeOtherLangLetters ? 'withOtherLangLetters' : 'withoutOtherLangLetters';
+        const cacheKey = includeOtherLangLetters
+            ? 'SourceAlphabetWithOtherLangLetters'
+            : 'SourceAlphabetWithoutOtherLangLetters';
 
-        if (!this.#cache[cacheKey]) {
-            this.#cache[cacheKey] = this.#doGetSourceAlphabet(includeOtherLangLetters);
+        if (!this.#cache.has(cacheKey)) {
+            this.#cache.set(cacheKey, this.#doGetSourceAlphabet(includeOtherLangLetters));
         }
 
-        const alphabet = this.#cache[cacheKey];
+        const alphabet = this.#cache.get(cacheKey);
         return getOnlyLower ? this.#makeLowerAlphabet(alphabet) : alphabet;
+    }
+
+    /**
+     * Returns a list of vowels from the source alphabet.
+     * It includes the general Cyrillic vowels by default. If the `includeOtherLangLetters`
+     * parameter is set to true, the source alphabet may also include other language's letters.
+     *
+     * @param {boolean} includeOtherLangLetters - Whether to include other language's letters.
+     * @returns {string[]} - An array of vowels in the source alphabet.
+     */
+    getSourceVowels(includeOtherLangLetters) {
+        const cacheKey = includeOtherLangLetters
+            ? 'SourceVowelsWithOtherLangLetters'
+            : 'SourceVowelsWithoutOtherLangLetters';
+
+        if (!this.#cache.has(cacheKey)) {
+            this.#cache.set(cacheKey, this.#doGetSourceVowels(includeOtherLangLetters));
+        }
+
+        return this.#cache.get(cacheKey);
+    }
+
+    /**
+     * Returns a list of consonants from the source alphabet.
+     * It includes the general Cyrillic consonants by default. If the `includeOtherLangLetters`
+     * parameter is set to true, the source alphabet may also include other language's letters.
+     *
+     * @param {boolean} includeOtherLangLetters - Whether to include other language's letters.
+     * @returns {string[]} - An array of consonants in the source alphabet.
+     */
+    getSourceConsonants(includeOtherLangLetters) {
+        const cacheKey = includeOtherLangLetters
+            ? 'SourceConsonantsWithOtherLangLetters'
+            : 'SourceConsonantsWithoutOtherLangLetters';
+
+        if (!this.#cache.has(cacheKey)) {
+            this.#cache.set(cacheKey, this.#doGetSourceConsonants(includeOtherLangLetters));
+        }
+
+        return this.#cache.get(cacheKey);
+    }
+
+    /**
+     * Returns a list of special signs from the source alphabet.
+     * It includes the general Cyrillic special signs by default. If the `includeOtherLangLetters`
+     * parameter is set to true, the source alphabet may also include other language's letters.
+     *
+     * @param {boolean} includeOtherLangLetters - Whether to include other language's letters.
+     * @returns {string[]} - An array of special signs in the source alphabet.
+     */
+    getSourceSpecialSigns(includeOtherLangLetters) {
+        const cacheKey = includeOtherLangLetters
+            ? 'SourceSpecialSignsWithOtherLangLetters'
+            : 'SourceSpecialSignsWithoutOtherLangLetters';
+
+        if (!this.#cache.has(cacheKey)) {
+            this.#cache.set(cacheKey, this.#doGetSourceSpecialSigns(includeOtherLangLetters));
+        }
+
+        return this.#cache.get(cacheKey);
+    }
+
+    /**
+     * Returns an array of unique digraphs (specified letter combinations) from various dictionaries in the config.
+     * @returns {string[]} An array of unique digraphs.
+     */
+    getDigraphs() {
+        const cacheKey = 'Digraphs';
+
+        if (!this.#cache.has(cacheKey)) {
+            this.#cache.set(cacheKey, this.#doGetDigraphs());
+        }
+
+        return this.#cache.get(cacheKey);
     }
 
     /**
@@ -181,6 +257,92 @@ class TransliterationConfig {
         return uniqueLetters
             .filter(letter => includeOtherLangLetters || !cfg.otherLanguagesLettersDict.hasOwnProperty(letter))
             .sort(TransliterationConfig.alphabetOrderComparator);
+    }
+
+
+    #doGetSourceVowels(includeOtherLangLetters) {
+        const generalCyrVowels = new Set([
+            'А', 'а', 'Е', 'е', 'Ё', 'ё',
+            'Є', 'є', 'И', 'и', 'І', 'і',
+            'Ї', 'ї', 'О', 'о', 'У', 'у',
+            'Ы', 'ы', 'Э', 'э', 'Ю', 'ю',
+            'Я', 'я'
+        ]);
+        const alphabet = this.getSourceAlphabet(false, includeOtherLangLetters);
+        return alphabet.filter(l => generalCyrVowels.has(l));
+    }
+
+    #doGetSourceConsonants(includeOtherLangLetters) {
+        const generalCyrConsonants = new Set([
+            'Б', 'б', 'В', 'в', 'Г', 'г', 'Ґ', 'ґ', 'Д',
+            'д', 'Ѓ', 'ѓ', 'Ђ', 'ђ', 'Ж', 'ж', 'З', 'з',
+            'З́', 'з́', 'Ѕ', 'ѕ', 'Й', 'й', 'Ј', 'ј', 'К',
+            'к', 'Л', 'л', 'Љ', 'љ', 'М', 'м', 'Н', 'н',
+            'Њ', 'њ', 'П', 'п', 'Р', 'р', 'С', 'с', 'С́',
+            'с́', 'Т', 'т', 'Ћ', 'ћ', 'Ќ', 'ќ', 'Ў', 'ў',
+            'Ф', 'ф', 'Х', 'х', 'Ц', 'ц', 'Ч', 'ч', 'Џ',
+            'џ', 'Ш', 'ш', 'Щ', 'щ'
+        ]);
+
+        const alphabet = this.getSourceAlphabet(false, includeOtherLangLetters);
+        return alphabet.filter(l => generalCyrConsonants.has(l));
+
+        /*      this.#currentConfig.unsoftableConsonants.concat(Object.keys(this.#currentConfig.softableConsonantsDict));
+
+                const resultFromBeforeStartDict = [];
+                for (const con of result) {
+                    const entries = Object.entries(this.#currentConfig.beforeStartDict);
+                    for (const [key, vals] of entries) {
+                        const valOrArr = vals;
+
+                        const needToPush = Array.isArray(valOrArr)
+                            ? valOrArr.includes(con)
+                            : valOrArr === con;
+
+                        if (needToPush) {
+                            resultFromBeforeStartDict.push(key);
+                        }
+                    }
+                }
+                result = result.concat(resultFromBeforeStartDict);
+
+                if (needUniqueAndSorted) {
+                    result = result
+                        .filter((v, i, s) => s.indexOf(v) === i) // get unique
+                        .sort(Transliterator.#alphabetOrderComparator);
+                }*/
+    }
+
+    #doGetSourceSpecialSigns(includeOtherLangLetters) {
+        const generalSpecialSigns = new Set([
+            'Ъ', 'ъ', 'Ь', 'ь', "'", '’',
+        ]);
+        const alphabet = this.getSourceAlphabet(false, includeOtherLangLetters);
+        return alphabet.filter(l => generalSpecialSigns.has(l));
+    }
+
+    #doGetDigraphs() {
+        // TODO: do caching as in getSourceAlphabet()
+        const cfg = this.#wrappedConfig;
+
+        const dictsToGetFrom = [
+            cfg.beforeStartDict,
+            cfg.dict,
+            cfg.apostrophesSingleKeyDict,
+            cfg.softableConsonantsDict,
+            cfg.softingVowelsMultiDict,
+            cfg.softingSignsMultiDict,
+            cfg.otherLanguagesLettersDict,
+            cfg.afterFinishDict
+        ];
+
+        const letterHeap = dictsToGetFrom.flatMap(dict => Hlprs.flattenValues(dict));
+
+        const digraphs = letterHeap
+            .filter(el => el && el.length > 1)
+            .map(el => el.toLowerCase());
+
+        return [...new Set(digraphs)]; // get unique
     }
 
     #makeLowerAlphabet(array) {
@@ -230,34 +392,6 @@ class TransliterationConfig {
         }
 
         return signChanger * a.localeCompare(b, 'uk', {caseFirst: 'upper'});
-    }
-
-    /**
-     * Returns an array of unique digraphs (specified letter combinations) from various dictionaries in config.
-     * @returns {string[]} An array of unique digraphs.
-     */
-    getDigraphs() {
-        // TODO: do caching as in getSourceAlphabet()
-        const cfg = this.#wrappedConfig;
-
-        const dictsToGetFrom = [
-            cfg.beforeStartDict,
-            cfg.dict,
-            cfg.apostrophesSingleKeyDict,
-            cfg.softableConsonantsDict,
-            cfg.softingVowelsMultiDict,
-            cfg.softingSignsMultiDict,
-            cfg.otherLanguagesLettersDict,
-            cfg.afterFinishDict
-        ];
-
-        const letterHeap = dictsToGetFrom.flatMap(dict => Hlprs.flattenValues(dict));
-
-        const digraphs = letterHeap
-            .filter(el => el && el.length > 1)
-            .map(el => el.toLowerCase());
-
-        return [...new Set(digraphs)]; // get unique
     }
 
 
