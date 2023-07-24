@@ -174,7 +174,8 @@ class TransliterationConfig {
             ...(includeOtherLangLetters ? Object.keys(cfg.otherLanguagesLettersDict) : [])
         ];
 
-        const uniqueLetters = [...new Set(letterHeap.flat())];
+        const letters = letterHeap.flatMap(el => [...el]); // flatMap for flattening letter combinations
+        const uniqueLetters = [...new Set(letters)];
 
         // Filter out other languages' letters if not needed and sort the remaining letters.
         return uniqueLetters
@@ -238,7 +239,6 @@ class TransliterationConfig {
     getDigraphs() {
         // TODO: do caching as in getSourceAlphabet()
         const cfg = this.#wrappedConfig;
-        //const dontUseDiacritics = false; // !this.#useDiacritics todo: get rid of #useDiacritics!
 
         const dictsToGetFrom = [
             cfg.beforeStartDict,
@@ -251,7 +251,7 @@ class TransliterationConfig {
             cfg.afterFinishDict
         ];
 
-        const letterHeap = dictsToGetFrom.flatMap(dict => Hlprs.flattenValues(dict/*, dontUseDiacritics*/));
+        const letterHeap = dictsToGetFrom.flatMap(dict => Hlprs.flattenValues(dict));
 
         const digraphs = letterHeap
             .filter(el => el && el.length > 1)
