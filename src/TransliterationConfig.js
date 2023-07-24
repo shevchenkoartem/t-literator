@@ -2,11 +2,29 @@ const Hlprs = typeof window === 'undefined'
     ? /* Node.js */ require('./helpers/StringValueOrArrayHelpers')
     : /* browser */ StringValueOrArrayHelpers;
 
-// A wrapper over a raw json config
 // TODO: expose outside unordered maps and sets, not objects and arrays
+
+/**
+ * A wrapper over a raw json config.
+ * It provides a normalized config object with some additional methods.
+ */
 class TransliterationConfig {
+    static #UNSUPPORTED_NON_DIACRITIC_VALUES_MSG = "Previously supported non-diacritic values are deprecated";
     static #AFFECTING = 'affecting';
     static #AFFECTED = 'affected';
+
+    #wrappedConfig = null; // rename to wrappedConfigMap?
+    #cache = new Map();
+
+    /**
+     * Creates a new instance of the TransliterationConfig class.
+     * Takes a raw config object as a parameter and normalizes it under the hood.
+     * @param rawConfig - A raw config object retrieved from a config JSON file.
+     */
+    constructor(rawConfig) {
+        this.#wrappedConfig = {...rawConfig};
+        this.#ensureNormalized();
+    }
 
     static get AFFECTING() { // get-only for outside
         return this.#AFFECTING;
@@ -16,41 +34,65 @@ class TransliterationConfig {
         return this.#AFFECTED;
     }
 
-    static #UNSUPPORTED_NON_DIACRITIC_VALUES_MSG = "Previously supported non-diacritic values are deprecated";
-
-    #wrappedConfig = null; // rename to wrappedConfigMap?
-    #cache = new Map();
-
-    constructor(rawConfig) {
-        this.#wrappedConfig = {...rawConfig};
-        this.#ensureNormalized();
-    }
-
+    /**
+     * Returns a copy of the config.
+     * @returns {*}
+     */
     get #configCopy() {
         return {...this.#wrappedConfig};
     }
 
-    // TODO: think what to leave private:
-    // TODO: make not mutual by using configCopy?
-    // TODO: use Proxy - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy
+    // TODO: make props not mutual by using configCopy?
+
+    /**
+     * Eng: The unique codename of the config.
+     *
+     * Ukr: Унікальний кодовий ідентифікатор конфігу.
+     *
+     * @returns {string}
+     */
     get code() {
         return this.#wrappedConfig.code;
     }
 
+    /**
+     * Eng: The name of the config (or the transliteration variant).
+     *
+     * Ukr: Назва конфігу (чи варіанту латинки).
+     *
+     * @returns {string}
+     */
     get name() {
         return this.#wrappedConfig.name;
     }
 
+    /**
+     * Eng: The description of the transliteration variant.
+     *
+     * Ukr: Опис цього варіанту латинки.
+     *
+     * @returns {string}
+     */
     get desc() {
         return this.#wrappedConfig.desc;
     }
 
+    /**
+     * Eng: The link to some info about the transliteration variant.
+     *
+     * Ukr: Посилання на джерело інформації про цей варіант латинки.
+     *
+     * @returns {string}
+     */
     get link() {
         return this.#wrappedConfig.link;
     }
 
     /**
-     * Returns the language code of the config's source language.
+     * Eng: The language code of the config's source language.
+     *
+     * Ukr: Код мови, з якої транслітерується.
+     *
      * @returns {string}
      */
     get from() {
@@ -58,86 +100,257 @@ class TransliterationConfig {
     }
 
     /**
-     * Returns the language code of the config's target language.
+     * Eng: The language code of the config's target language.
+     *
+     * Ukr: Код мови, на яку транслітерується.
+     *
      * @returns {string}
      */
     get to() {
         return this.#wrappedConfig.to;
     }
 
+    /**
+     * Eng: Yhe year when the transliteration variant's was created.
+     *
+     * Ukr: Рік створення цього варіанту латинки.
+     *
+     * @returns {number}
+     */
     get year() {
         return this.#wrappedConfig.year;
     }
 
+    /**
+     * Eng: This option tells you if you can set replacements in specific sections of the word
+     * ([at the beginning, inside, at the end] 3-values array instead of a single value).
+     * This option may affect performance.
+     *
+     * Ukr: Ця опція вказує, чи можна налаштувати заміну в конкретній частині слова
+     * (трьохелементний масив [на початку, всередині, вкінці] замість одного значення).
+     * Ця опція може дещо знизити продуктивність.
+     *
+     * @returns {boolean}
+     */
     get useLocationInWordAlgo() {
         return this.#wrappedConfig.useLocationInWordAlgo;
     }
 
+    /**
+     * Eng: If `true`, the softening vowel softens the preceding consonant without changing it (сю => su̇).
+     * If `false`, the softening vowel changes the previous consonant and turns into a regular vowel (сю => śu).
+     *
+     * Ukr: Якщо `true`, то пом'якшувальна голосна пом'якшує попередній приголосний без його зміни (сю => su̇).
+     * Якщо `false` – пом'якшувальна голосна пом'якшує попередній приголосний з його зміною,
+     * а сама перетворюється на звичайну голосну (сю => śu).
+     *
+     * @returns {boolean}
+     */
     get affectVowelNotConsonantWhenSofting() {
         return this.#wrappedConfig.affectVowelNotConsonantWhenSofting;
     }
 
+    /**
+     * Eng: The basic transliteration dictionary
+     * (a map of letters to their transliterated values).
+     * If `useLocationInWordAlgo` is `true`, the values may be [at the beginning, inside, at the end] arrays of values.
+     *
+     * Ukr: Основний словник транслітерації
+     * (мапа літер до їхніх транслітерованих значень).
+     * Якщо `useLocationInWordAlgo` ативований, значення словника можуть бути масивами [на початку, всередині, вкінці].
+     *
+     * @returns {Object.<string, (string|Array.<string>)>} // TODO: use Map instead of Object
+     */
     get dict() {
         return this.#wrappedConfig.dict;
     }
 
+    /**
+     * Eng: The transliteration dictionary for letters from other mutually intelligible languages
+     * (a map of letters to their transliterated values).
+     * If `useLocationInWordAlgo` is `true`, the values may be [at the beginning, inside, at the end] arrays of values.
+     *
+     * Ukr: Словник транслітерації для літер з інших схожих мов
+     * (мапа літер до їхніх транслітерованих значень).
+     * Якщо `useLocationInWordAlgo` ативований, значення словника можуть бути масивами [на початку, всередині, вкінці].
+     *
+     * @returns {Object.<string, (string|Array.<string>)>} // TODO: use Map instead of Object
+     */
     get otherLanguagesLettersDict() {
         return this.#wrappedConfig.otherLanguagesLettersDict;
     }
 
+    /**
+     * Eng: The list of consonants that cannot be phonemically palatalized.
+     *
+     * Ukr: Перелік приголосних, які питомо для української мови не мають м'яких звуків,
+     * - для них вводиться поняття фонеми периферійної підсистеми, а в основній системі вони зараз класифікуються як
+     * алофони відповідних твердих фонем (http://goo.gl/pnybDn).
+     *
+     * @returns {Array.<string>}
+     */
     get unsoftableConsonants() {
         return this.#wrappedConfig.unsoftableConsonants;
     }
 
+    /**
+     * Eng: The map of palatalized consonants to their palatalized transliterated counterparts.
+     *
+     * Ukr: Словник м'яких приголосних до їхніх м'яких латинських відповідників.
+     *
+     * @returns {Object.<string, string>}
+     */
     get softableConsonantsDict() {
         return this.#wrappedConfig.softableConsonantsDict;
     }
 
+    /**
+     * Eng: A two-level map of softening vowels to their transliterated values ("affecting" and "affected")
+     * when softening a consonant.
+     * The "affecting" value is for cases when the consonant changes when gets palatalized, but the vowel doesn't.
+     * E.g., "ćatka" ('c' changed to 'ć').
+     * The "affected" value is for cases when the vowel changes when softening (but the consonant doesn't,
+     * for example, when it is in the `unsoftableConsonants` list). E.g., "bjuvet" ('u' changed to 'ju').
+     * If the `affectVowelNotConsonantWhenSofting` setting is `true`, the vowel will always change when softening,
+     * so the "affecting" and "affected" values in this map will be the same (although, "affecting" will
+     * not make much sense in this case).
+     *
+     * Ukr: Двохрівневий словних пом'якшувальних голосних до їхніх транслітераційних значень ("affecting" і "affected")
+     * при пом'якшенні приголосної.
+     * Транслітераційне значення "affecting" – для випадків, коли при помʼякшенні приголосної змінюється приголосна,
+     * а голосна ні. Наприклад, "ćatka" ('c' перейшла в 'ć').
+     * Транслітераційне значення "affected" – для випадків, коли при помʼякшенні приголосної змінюється голосна
+     * (а приголосна ні – до прикладу, коли вона є в переліку `unsoftableConsonants`).
+     * Наприклад, "bjuvet" ('u' перейшла в 'ju').
+     * Якщо активоване налаштування `affectVowelNotConsonantWhenSofting` == `true`, голосна змінюватиметься завжди
+     * при пом'якшенні, тому значення "affecting" і "affected" у цьому словнику співпадатимуть (хоча, "affecting"
+     * в такому разі не матиме особливого сенсу).
+     *
+     * @returns {Object.<string, {affecting: string, affected: string}>}
+     */
     get softingVowelsMultiDict() {
         return this.#wrappedConfig.softingVowelsMultiDict;
     }
 
+    /**
+     * Eng: A two-level map of softening signs to their transliterated values ("affecting" and "affected")
+     * when softening a consonant.
+     * The "affecting" value is for cases when the consonant changes when gets palatalized and softening sign is not
+     * transliterated. E.g., "міць" => "mić" ('c' changed to 'ć', 'ь' wasn't transliterated).
+     * The "affected" value is for cases when the softening sign becomes transliterated when softening (but the consonant doesn't,
+     * for example, when it's in the `unsoftableConsonants` list). That's very rare and is not used in Ukrainian.
+     *
+     * Ukr: Двохрівневий словних пом'якшувальних знаків до їхніх транслітераційних значень ("affecting" і "affected")
+     * при пом'якшенні приголосної.
+     * Транслітераційне значення "affecting" – для випадків, коли при помʼякшенні приголосної змінюється приголосна,
+     * а пом'якшувальний знак не транслітерується. Наприклад, "міць" => "mić" ('c' перейшла в 'ć', а мʼякий знак не транслітерувався).
+     * Транслітераційне значення "affected" – для випадків, коли пом'якшувальний знак транслітерується при помʼякшенні
+     * (але приголосна ні – до прикладу, коли вона є в переліку `unsoftableConsonants`). Це дуже рідкісний випадок, який
+     * не використовується в українській мові.
+     *
+     * @returns {Object.<string, {affecting: string, affected: string}>}
+     */
     get softingSignsMultiDict() {
         return this.#wrappedConfig.softingSignsMultiDict;
     }
 
+    /**
+     * Eng: The transliteration dictionary for apostrophes. The key of this map is all possible apostrophes in one string,
+     * and the value is a single transliterated value for all these apostrophes. If the value is not specified, apostrophes
+     * are not transliterated.
+     *
+     * Ukr: Словник транслітерації апострофів. Ключ цього словника – усі можливі апострофи одним рядком, а значення –
+     * єдине транслітероване значення для всіх цих апострофів. Якщо значення не вказано, апострофи не транслітеруються.
+     *
+     * @returns {Object.<string, string>}
+     */
     get apostrophesSingleKeyDict() {
         return this.#wrappedConfig.apostrophesSingleKeyDict;
     }
 
+    /**
+     * Eng: A map of already transliterated lowercase letters to their uppercase counterparts, when their pair is not
+     * a standard case conversion. E.g., "d" => "Ɗ" (not "D") or "i" => "İ" (not "I").
+     *
+     * Ukr: Словник вже транслітерованих малих до великих літер, коли їхні пара не є сдантартним регістровим перетворенням.
+     * Наприклад, "d" => "Ɗ" (не "D") чи "i" => "İ" (не "I").
+     *
+     * @returns {Object.<string, string>}
+     */
     get exceptionalCaseRules() {
         return this.#wrappedConfig.exceptionalCaseRules;
     }
 
+    /**
+     * Eng: A map for replacing special symbols in transliteration. E.g., "№" => "No."
+     *
+     * Ukr: Словник для заміни спеціальних символів у траслітерації. Наприклад, "№" => "No."
+     *
+     * @returns {Object.<string, string>}
+     */
     get specSymbolsDict() {
         return this.#wrappedConfig.specSymbolsDict;
     }
 
-    get substitutionForErrors() {
-        return this.#wrappedConfig.substitutionForErrors;
+    /**
+     * Eng: The substitution for undefined result.
+     *
+     * Ukr: Заміна для невизначеного результату.
+     *
+     * @returns {string}
+     */
+    get substitutionForUndefinedResult() {
+        return this.#wrappedConfig.substitutionForUndefinedResult;
     }
 
+    /**
+     * Eng: The dictionary of replacements that should be applied at the very beginning of the transliteration algorithm.
+     *
+     * Ukr: Словник замін, що мають виконтися на самому початку роботи алгоритму траслітерації.
+     *
+     * @returns {Object.<string, string>}
+     */
     get beforeStartDict() {
         return this.#wrappedConfig.beforeStartDict;
     }
 
+    /**
+     * Eng: The dictionary of clean-up replacements that should be applied at the very end of the transliteration algorithm.
+     *
+     * Ukr: Словник замін для остаточної підчистки, що мають виконатися на самому кінці роботи алгоритму траслітерації.
+     *
+     * @returns {Object.<string, string>}
+     */
     get afterFinishDict() {
         return this.#wrappedConfig.afterFinishDict;
     }
 
-    get isEmpty() {
-        return this.#wrappedConfig != null;
-    }
-
-    get isNormalized() {
-        return this.#wrappedConfig.isNormalized;
-    }
-
+    /**
+     * Returns a specific property of the config.
+     * @param propName - The name of the property.
+     * @returns {undefined|*}
+     */
     getProperty(propName) {
         if (!this.#wrappedConfig.hasOwnProperty(propName)) {
             return undefined;
         }
         return this.#configCopy[propName];
+    }
+
+    /**
+     * Whether the config is empty.
+     * @returns {boolean}
+     */
+    get isEmpty() {
+        return this.#wrappedConfig != null;
+    }
+
+    /**
+     * Whether the config is normalized.
+     * @returns {boolean|*}
+     */
+    get isNormalized() {
+        return this.#wrappedConfig.isNormalized; // why isNormalized is not a field of the class?
     }
 
     /**
