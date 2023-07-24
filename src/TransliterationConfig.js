@@ -49,12 +49,18 @@ class TransliterationConfig {
         return this.#wrappedConfig.link;
     }
 
-    // from language
+    /**
+     * Returns the language code of the config's source language.
+     * @returns {string}
+     */
     get from() {
         return this.#wrappedConfig.from;
     }
 
-    // to language
+    /**
+     * Returns the language code of the config's target language.
+     * @returns {string}
+     */
     get to() {
         return this.#wrappedConfig.to;
     }
