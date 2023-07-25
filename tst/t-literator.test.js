@@ -53,7 +53,7 @@ const testConfig = function (cfgName, doNotUseDiacritic) {
         expect(actualAlphabet).toEqual(expectedAlphabet);
     });
 
-    const actualTransAlphabet = trans.getTransliteratedAlphabet();
+    const actualTransAlphabet = trans.getConfigTransliteratedAlphabet();
     expectedRawData = !cfgName.length ? '' 
         : fdr.readTestCheck(`exp_alphabet_${cfgName}${suffix}`, 'alphabet', true);
 
@@ -105,7 +105,7 @@ for (const conf of configs) {
 //trans.useConfig(configs[3]);
 //console.log(trans.transliterate(""));
 //сonsole.log(trans.getSourceAlphabet());
-// console.log(trans.getTransliteratedAlphabet());
+// console.log(trans.getConfigTransliteratedAlphabet());
 
 // console.log(getTransliteration(
 // ``

@@ -21,7 +21,7 @@ const t = new Transliterator(reader);
 
 const createTestChecksResults = function(config) {
     t.useConfig(config);
-    const alphab = t.getTransliteratedAlphabet();
+    const alphab = t.getConfigTransliteratedAlphabet();
     const info = t.getConfigTransliterationInfo();
 
     const inputRawData = reader.readTestCheck('_actual_input', 'trans');
@@ -60,7 +60,7 @@ const start = new Date();
 for (const conf of configs) {
     t.useConfig(conf);
     console.log(t.getConfigTransliterationInfo());
-    //console.log(t.getTransliteratedAlphabet(false, true));
+    //console.log(t.getConfigTransliteratedAlphabet(false, true));
 
     //console.log(conf);
     //console.log(t.getSourceConsonants(false));
