@@ -7,7 +7,7 @@ const ConfigHlprs = typeof window === 'undefined'
     : /* browser */ ConfigHelpers;
 
 const StrHlprs = typeof window === 'undefined'
-    ? /* Node.js */ require('./helpers/StrUtils')
+    ? /* Node.js */ require('./helpers/StringUtils')
     : /* browser */ StringUtils;
 
 // TODO: expose outside unordered maps and sets, not objects and arrays
@@ -863,11 +863,6 @@ class TransliterationConfig {
         return [...new Set(digraphs)]; // get unique
     }
 
-    #makeLowerAlphabet(array) {
-        const lowerAlphabet = array.map(c => StrHlprs.toLowerCase(c));
-        return [...new Set(lowerAlphabet)]; // make unique
-    }
-
     // TODO: would be nice to make it private when it's possible:
     /**
      * A custom comparator for sorting letters in a specific order.
@@ -912,7 +907,7 @@ class TransliterationConfig {
         return signChanger * a.localeCompare(b, 'uk', {caseFirst: 'upper'});
     }
 
-
+    // TODO: Create class ConfigNormalizer and move all normalization logic there.
     /**
      * Ensures the config is normalized according to specific rules.
      * This involves assigning default values to the config's properties if they have not been initialized.
