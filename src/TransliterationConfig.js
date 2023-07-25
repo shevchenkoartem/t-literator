@@ -484,7 +484,6 @@ class TransliterationConfig {
         return this.#cache.get(cacheKey);
     }
 
-
     // TODO: still needs some refactoring and caching
     // TODO: PROFILER: long time running
     #doGetTransliterationInfo(transliterator, ignorePositionalCases, ignoreSofteningCases) {
@@ -661,8 +660,8 @@ class TransliterationConfig {
         let unsoftableLowerConTransed;
 
         if (softableUpperCon != null && softableLowerCon != null) {
-            softableUpperConTransed = ConfigHlprs.getPositionalValue(cfg.softableConsonantsDict[softableUpperCon], 2);
-            softableLowerConTransed = ConfigHlprs.getPositionalValue(cfg.softableConsonantsDict[softableLowerCon], 2);
+            softableUpperConTransed = ConfigHlprs.getPositionalValue_Post(cfg.softableConsonantsDict[softableUpperCon]);
+            softableLowerConTransed = ConfigHlprs.getPositionalValue_Post(cfg.softableConsonantsDict[softableLowerCon]);
         }
         if (unsoftableUpperCon != null && unsoftableLowerCon != null) {
             unsoftableUpperConTransed = transliterator.transliterate(unsoftableUpperCon);
@@ -676,8 +675,8 @@ class TransliterationConfig {
         let affectingLowerSoftingSignTransed;
 
         if (upperSoftingSign != null && lowerSoftingSign != null) {
-            affectingUpperSoftingSignTransed = ConfigHlprs.getPositionalValue(cfg.softingSignsMultiDict[upperSoftingSign][TransliterationConfig.#AFFECTING], 2);
-            affectingLowerSoftingSignTransed = ConfigHlprs.getPositionalValue(cfg.softingSignsMultiDict[lowerSoftingSign][TransliterationConfig.#AFFECTING], 2);
+            affectingUpperSoftingSignTransed = ConfigHlprs.getPositionalValue_Post(cfg.softingSignsMultiDict[upperSoftingSign][TransliterationConfig.#AFFECTING]);
+            affectingLowerSoftingSignTransed = ConfigHlprs.getPositionalValue_Post(cfg.softingSignsMultiDict[lowerSoftingSign][TransliterationConfig.#AFFECTING]);
         }
 
         return {

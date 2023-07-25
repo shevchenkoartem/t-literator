@@ -93,7 +93,7 @@ class Transliterator {
                     softingVowVals[Config.AFFECTED]; // when con is unsoftable, vow is forcibly soften
 
                 if (cfg.useLocationInWordAlgo && Array.isArray(softedVowVals)) { // todo: rename to single?
-                    const softedVowValLocated = CfgHelpers.getPositionalValue(softedVowVals, 2);
+                    const softedVowValLocated = CfgHelpers.getPositionalValue_Post(softedVowVals);
                     lat = lat.replaceAll(
                         unsoftableCon + softingVow + this.#WORD_END,
                         unsoftableCon + softedVowValLocated + this.#WORD_END
@@ -102,7 +102,7 @@ class Transliterator {
                 }
 
                 // replace either value (common case) or middle value (if useLocationInWordAlgo):
-                const softedVowVal = CfgHelpers.getPositionalValue(softedVowVals);
+                const softedVowVal = CfgHelpers.getPositionalValue_Mid(softedVowVals);
                 lat = lat.replaceAll(
                     unsoftableCon + softingVow,
                     unsoftableCon + softedVowVal
@@ -114,10 +114,10 @@ class Transliterator {
 
                 const conAfterSoftening = cfg.affectVowelNotConsonantWhenSofting
                     ? conToSoften
-                    : CfgHelpers.getPositionalValue(softedConVals);
+                    : CfgHelpers.getPositionalValue_Mid(softedConVals);
 
                 if (cfg.useLocationInWordAlgo && Array.isArray(softingVowVals[Config.AFFECTING])) {
-                    const vowAfterSofteningLocated = CfgHelpers.getPositionalValue(softingVowVals[Config.AFFECTING], 2);
+                    const vowAfterSofteningLocated = CfgHelpers.getPositionalValue_Post(softingVowVals[Config.AFFECTING]);
                     lat = lat.replaceAll(
                         conToSoften + softingVow + this.#WORD_END,
                         conAfterSoftening + vowAfterSofteningLocated + this.#WORD_END
@@ -125,7 +125,7 @@ class Transliterator {
                     // TODO: + beginning with softed
                 }
 
-                const vowAfterSoftening = CfgHelpers.getPositionalValue(softingVowVals[Config.AFFECTING]);
+                const vowAfterSoftening = CfgHelpers.getPositionalValue_Mid(softingVowVals[Config.AFFECTING]);
                 lat = lat.replaceAll(
                     conToSoften + softingVow,
                     conAfterSoftening + vowAfterSoftening
@@ -146,10 +146,10 @@ class Transliterator {
             for (const [conToSoften, softedConVals] of softableConsonantsDictEntries) {
                 // TODO: consider useLocationInWordAlgo, recheck
 
-                const conAfterSoftening = CfgHelpers.getPositionalValue(softedConVals);
+                const conAfterSoftening = CfgHelpers.getPositionalValue_Mid(softedConVals);
 
                 if (cfg.useLocationInWordAlgo && Array.isArray(softingSignSubDict[Config.AFFECTING])) {
-                    const softingSignAfterSofteningLocated = CfgHelpers.getPositionalValue(softingSignSubDict[Config.AFFECTING], 2);
+                    const softingSignAfterSofteningLocated = CfgHelpers.getPositionalValue_Post(softingSignSubDict[Config.AFFECTING]);
                     lat = lat.replaceAll(
                         conToSoften + softingSign + this.#WORD_END,
                         conAfterSoftening + softingSignAfterSofteningLocated + this.#WORD_END
@@ -157,7 +157,7 @@ class Transliterator {
                     // TODO: + beginning with softed
                 }
 
-                const softingSignAfterSoftening = CfgHelpers.getPositionalValue(softingSignSubDict[Config.AFFECTING]);
+                const softingSignAfterSoftening = CfgHelpers.getPositionalValue_Mid(softingSignSubDict[Config.AFFECTING]);
                 lat = lat.replaceAll(
                     conToSoften + softingSign,
                     conAfterSoftening + softingSignAfterSoftening
@@ -317,12 +317,12 @@ class Transliterator {
             const valOrPositionalVals = vals;
 
             if (useLocationInWordAlgo && Array.isArray(valOrPositionalVals)) {
-                res = res.replaceAll(this.#WORD_START + key, this.#WORD_START + CfgHelpers.getPositionalValue(valOrPositionalVals, 0));
-                res = res.replaceAll(key + this.#WORD_END, CfgHelpers.getPositionalValue(valOrPositionalVals, 2) + this.#WORD_END);
+                res = res.replaceAll(this.#WORD_START + key, this.#WORD_START + CfgHelpers.getPositionalValue_Pre(valOrPositionalVals));
+                res = res.replaceAll(key + this.#WORD_END, CfgHelpers.getPositionalValue_Post(valOrPositionalVals) + this.#WORD_END);
             }
 
             // replace either value (common case) or middle value (if useLocationInWordAlgo):
-            res = res.replaceAll(key, CfgHelpers.getPositionalValue(valOrPositionalVals));
+            res = res.replaceAll(key, CfgHelpers.getPositionalValue_Mid(valOrPositionalVals));
         }
 
         return res;
