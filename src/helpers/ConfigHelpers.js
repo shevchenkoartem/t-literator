@@ -1,14 +1,27 @@
 class ConfigHelpers {
-    static getPositionalValue(from, preIs0_midIs1_postIs2) { // для обробки можливості мати тріаду префікс-мід-пост
-        if (preIs0_midIs1_postIs2 == null) {
-            preIs0_midIs1_postIs2 = 1; // default is mid
-        }
 
-        return Array.isArray(from)
-            ? (from.length > preIs0_midIs1_postIs2
-                ? from[preIs0_midIs1_postIs2]
-                : from[from.length - 1])
-            : from;
+    static Position = {
+        PRE: 0,
+        MID: 1,
+        POST: 2
+    };
+
+    static getPositionalValue(from, position = this.Position.MID) {
+        if (!Array.isArray(from)) return from;
+
+        return from[position] ?? from[from.length - 1];
+    }
+
+    static getPositionalValue_Pre(from) {
+        return this.getPositionalValue(from, this.Position.PRE);
+    }
+
+    static getPositionalValue_Mid(from) {
+        return this.getPositionalValue(from, this.Position.MID);
+    }
+
+    static getPositionalValue_Post(from) {
+        return this.getPositionalValue(from, this.Position.POST);
     }
 }
 
