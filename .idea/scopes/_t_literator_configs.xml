@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="• t-literator-configs" pattern="(file[t-literator-js]:configs//*||file[t-literator-js]:tmp//*)&amp;&amp;!file:tmp/_playground.js&amp;&amp;!file:tmp/TODO.todo&amp;&amp;!file[t-literator-js]:configs/.github//*&amp;&amp;!file[t-literator-js]:configs/deploy//*&amp;&amp;!file:configs/.gitignore" />
+</component>

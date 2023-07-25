@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="• t-literator" pattern="(file[t-literator-js]:src//*||file[t-literator-js]:tst//*||file[t-literator-js]:tmp//*)&amp;&amp;!file:tmp/Configs description.txt||file:README.md" />
+</component>

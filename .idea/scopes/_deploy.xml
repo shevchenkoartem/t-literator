@@ -1,0 +1,3 @@
+<component name="DependencyValidationManager">
+  <scope name="• deploy" pattern="file[t-literator-js]:.github//*||file[t-literator-js]:configs/.github//*||file[t-literator-js]:configs/deploy//*||file[t-literator-js]:deploy//*" />
+</component>
